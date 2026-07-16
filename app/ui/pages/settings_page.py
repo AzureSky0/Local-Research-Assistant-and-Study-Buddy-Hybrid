@@ -1,16 +1,6 @@
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QLabel, QWidget, QVBoxLayout
+from app.ui.pages.base_page import BasePage
 
-class SettingsPage(QWidget):
+class SettingsPage(BasePage):
 
     def __init__(self) -> None:
-        super().__init__()
-        
-        layout = QVBoxLayout()
-
-        title = QLabel("Setting Page")
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        layout.addWidget(title)
-
-        self.setLayout(layout)
+        super().__init__("Setting Page")
