@@ -1,7 +1,7 @@
 [project]
 name = "local-research-assistant-and-study-buddy-hybrid"
 version = "0.1.0"
-description = "Desktop AI application for research assistance and study material generation using local documents."
+description = "NotebookLM for students, with built-in study tools and a persistent personal knowledge base."
 readme = "README.md"
 requires-python = ">=3.12"
 
