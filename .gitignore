@@ -5,6 +5,7 @@ venv/
 # Python cache
 __pycache__/
 *.pyc
+*$py.class
 
 # VS Code
 .vscode/
