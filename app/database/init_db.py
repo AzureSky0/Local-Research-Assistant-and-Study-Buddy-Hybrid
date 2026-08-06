@@ -2,7 +2,7 @@ from app.database.base import Base
 from app.database.engine import engine
 
 # Import entities so SQLAlchemy registers them
-from app.database.entities.document_entity import DocumentEntity
+from app.documents.orm.document_orm import DocumentORM
 
 
 def initialize_database() -> None:

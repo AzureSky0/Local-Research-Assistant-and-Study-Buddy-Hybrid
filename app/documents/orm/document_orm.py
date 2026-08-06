@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime , UTC
 from uuid import uuid4
 
 from sqlalchemy import DateTime, Integer, String
@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.database.base import Base
 
 
-class DocumentEntity(Base):
+class DocumentORM(Base):
     __tablename__ = "documents"
 
     id: Mapped[str] = mapped_column(
@@ -44,6 +44,6 @@ class DocumentEntity(Base):
 
     imported_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=datetime.utcnow,
+        default=lambda: datetime.now(UTC),
         nullable=False,
     )

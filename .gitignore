@@ -2,10 +2,14 @@
 .venv/
 venv/
 
+#docs reference
+project_helper/
+
 # Python cache
 __pycache__/
 *.pyc
 *$py.class
+data/database/*.db
 
 # VS Code
 .vscode/
