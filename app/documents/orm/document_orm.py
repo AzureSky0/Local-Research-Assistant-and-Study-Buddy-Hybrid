@@ -1,4 +1,6 @@
-from datetime import datetime , UTC
+from __future__ import annotations
+
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from sqlalchemy import DateTime, Integer, String
@@ -8,6 +10,10 @@ from app.database.base import Base
 
 
 class DocumentORM(Base):
+    """
+    SQLAlchemy ORM model representing an imported document.
+    """
+
     __tablename__ = "documents"
 
     id: Mapped[str] = mapped_column(
@@ -17,12 +23,12 @@ class DocumentORM(Base):
     )
 
     file_name: Mapped[str] = mapped_column(
-        String,
+        String(255),
         nullable=False,
     )
 
     original_path: Mapped[str] = mapped_column(
-        String,
+        String(1024),
         nullable=False,
     )
 
@@ -35,6 +41,7 @@ class DocumentORM(Base):
         String(64),
         nullable=False,
         unique=True,
+        index=True,
     )
 
     file_type: Mapped[str] = mapped_column(
@@ -43,7 +50,7 @@ class DocumentORM(Base):
     )
 
     imported_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         default=lambda: datetime.now(UTC),
         nullable=False,
     )

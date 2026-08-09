@@ -1,41 +1,36 @@
-from uuid import UUID
+from __future__ import annotations
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.documents.orm.document_orm import DocumentEntity
+from app.documents.orm import DocumentORM
 
 
 class DocumentRepository:
+    """Handles database persistence for documents."""
 
-    def __init__(self, session: Session):
-        self.session = session
+    def __init__(self, session: Session) -> None:
+        self._session = session
 
-    def create(
-        self,
-        document: DocumentEntity,
-    ) -> DocumentEntity:
-
-        self.session.add(document)
-        self.session.commit()
-        self.session.refresh(document)
+    def create(self, document: DocumentORM) -> DocumentORM:
+        """Persist a new document."""
+        self._session.add(document)
+        self._session.commit()
+        self._session.refresh(document)
 
         return document
 
-    def get_by_id(
-        self,
-        document_id: UUID,
-    ) -> DocumentEntity | None:
-
-        return (
-            self.session.query(DocumentEntity)
-            .filter(
-                DocumentEntity.id == str(document_id)
-            )
-            .first()
+    def get_by_id(self, document_id: str) -> DocumentORM | None:
+        """Return a document by its primary key."""
+        return self._session.get(
+            DocumentORM,
+            document_id,
         )
 
-    def get_all(self) -> list[DocumentEntity]:
-        return (
-            self.session.query(DocumentEntity)
-            .all()
+    def get_all(self) -> list[DocumentORM]:
+        """Return all documents."""
+        statement = select(DocumentORM)
+
+        return list(
+            self._session.scalars(statement)
         )

@@ -8,5 +8,5 @@ SessionLocal = sessionmaker(
     autocommit=False,
 )
 
-def get_session() -> Session:
+def create_session() -> Session:
     return SessionLocal()

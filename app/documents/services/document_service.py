@@ -1,43 +1,35 @@
-from pathlib import Path
+from __future__ import annotations
 
-from app.database.session import get_session
+from sqlalchemy.orm import Session
+
+from app.documents.domain import Document
 from app.documents.mapper.document_mapper import DocumentMapper
-from app.models.document import Document
 from app.documents.repository.document_repository import DocumentRepository
 
 
 class DocumentService:
+    """Provides business operations for documents."""
 
-    def __init__(self):
-        self.session = get_session()
-        self.repository = DocumentRepository(
-            self.session
+    def __init__(self, session: Session) -> None:
+        self._repository = DocumentRepository(session)
+
+    def create_document(self, document: Document) -> Document:
+        """Create and persist a document."""
+        document_orm = DocumentMapper.to_orm(document)
+
+        saved_document = self._repository.create(
+            document_orm
         )
 
-    def create_document(
-        self,
-        document: Document,
-    ) -> Document:
-
-        entity = DocumentMapper.to_entity(
-            document
+        return DocumentMapper.to_domain(
+            saved_document
         )
 
-        saved_entity = self.repository.create(
-            entity
-        )
-
-        return DocumentMapper.to_model(
-            saved_entity
-        )
-
-    def get_all_documents(
-        self,
-    ) -> list[Document]:
-
-        entities = self.repository.get_all()
+    def get_all_documents(self) -> list[Document]:
+        """Return all documents."""
+        documents_orm = self._repository.get_all()
 
         return [
-            DocumentMapper.to_model(entity)
-            for entity in entities
+            DocumentMapper.to_domain(document_orm)
+            for document_orm in documents_orm
         ]
