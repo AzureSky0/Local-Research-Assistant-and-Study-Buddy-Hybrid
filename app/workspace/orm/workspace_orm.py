@@ -16,50 +16,49 @@ class WorkspaceORM(Base):
         default=lambda: str(uuid4()),
     )
 
-    name : Mapped[str] = mapped_column(
+    name: Mapped[str] = mapped_column(
         String(100),
         nullable=False,
         index=True,
     )
 
-    description : Mapped[str | None] = mapped_column(
+    description: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
 
     icon: Mapped[str] = mapped_column(
-    String(50),
-    nullable=False,
-    default="folder",
+        String(50),
+        nullable=False,
+        default="folder",
     )
 
     color: Mapped[str] = mapped_column(
-    String(30),
-    nullable=False,
-    default="blue",
+        String(30),
+        nullable=False,
+        default="blue",
     )
 
     created_at: Mapped[datetime] = mapped_column(
-    DateTime,
-    nullable=False,
-    default=lambda: datetime.now(UTC)
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.now(UTC),
     )
 
     updated_at: Mapped[datetime] = mapped_column(
-    DateTime,
-    nullable=False,
-    default=lambda: datetime.now(UTC),
-    onupdate=lambda: datetime.now(UTC),
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
     last_opened_at: Mapped[datetime | None] = mapped_column(
-    DateTime,
-    nullable=True,
+        DateTime,
+        nullable=True,
     )
 
     is_archived: Mapped[bool] = mapped_column(
-    Boolean,
-    nullable=False,
-    default=False,
+        Boolean,
+        nullable=False,
+        default=False,
     )
-    
