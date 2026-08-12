@@ -27,6 +27,19 @@ class DocumentRepository:
             document_id,
         )
 
+    def get_by_checksum(
+        self,
+        checksum: str,
+    ) -> DocumentORM | None:
+        """Return a document matching the given checksum."""
+        statement = select(DocumentORM).where(
+            DocumentORM.checksum == checksum
+        )
+
+        return self._session.scalars(
+            statement
+        ).first()
+
     def get_all(self) -> list[DocumentORM]:
         """Return all documents."""
         statement = select(DocumentORM)
