@@ -6,7 +6,10 @@ from pathlib import Path
 from typing import Iterable
 from uuid import uuid4
 
-from app.documents.domain import Document
+from app.documents.domain import (
+    Document,
+    DocumentProcessingStatus,
+)
 from app.documents.dto.document_import_result import (
     DocumentImportResult,
     DocumentImportStatus,
@@ -55,6 +58,7 @@ class DocumentImportService:
             checksum=checksum,
             file_type=file_path.suffix.lower().lstrip("."),
             imported_at=datetime.now(UTC),
+            processing_status=DocumentProcessingStatus.PENDING,
         )
 
         return self._document_service.create_document(

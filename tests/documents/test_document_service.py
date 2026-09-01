@@ -2,9 +2,11 @@ from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
-from app.documents.domain import Document
+from app.documents.domain import (
+    Document,
+    DocumentProcessingStatus,
+)
 from app.documents.services.document_service import DocumentService
-
 
 def test_create_and_get_document(session: Session) -> None:
     service = DocumentService(session)
@@ -17,6 +19,7 @@ def test_create_and_get_document(session: Session) -> None:
         checksum="test-checksum",
         file_type="pdf",
         imported_at=datetime.now(UTC),
+        processing_status=DocumentProcessingStatus.PENDING,
     )
 
     saved = service.create_document(document)

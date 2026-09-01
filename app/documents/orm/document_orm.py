@@ -3,8 +3,10 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import DateTime, Integer, String
+from sqlalchemy import DateTime, Integer, String, Enum
 from sqlalchemy.orm import Mapped, mapped_column
+
+from app.documents.domain import DocumentProcessingStatus
 
 from app.database.base import Base
 
@@ -53,4 +55,10 @@ class DocumentORM(Base):
         DateTime(timezone=True),
         default=lambda: datetime.now(UTC),
         nullable=False,
+    )
+
+    processing_status: Mapped[DocumentProcessingStatus] = mapped_column(
+        Enum(DocumentProcessingStatus),
+        nullable=False,
+        default=DocumentProcessingStatus.PENDING,
     )

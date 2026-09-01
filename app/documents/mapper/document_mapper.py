@@ -17,6 +17,7 @@ class DocumentMapper:
             checksum=document.checksum,
             file_type=document.file_type,
             imported_at=document.imported_at,
+            processing_status=document.processing_status,
         )
 
     @staticmethod
@@ -29,4 +30,5 @@ class DocumentMapper:
             checksum=document_orm.checksum,
             file_type=document_orm.file_type,
             imported_at=document_orm.imported_at,
+            processing_status=document_orm.processing_status,
         )
