@@ -328,6 +328,9 @@ class SearchResultsView(QWidget):
                     more.setFlags(Qt.ItemFlag.NoItemFlags)
                     self._model.appendRow(more)
 
+    def clear_selection(self) -> None:
+        self._list.clearSelection()
+
     def _add_section(self, title: str) -> None:
         item = QStandardItem(title)
         item.setData(RowKind.SECTION, KIND_ROLE)

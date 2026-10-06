@@ -317,3 +317,34 @@ def test_double_clicking_a_result_opens_it_at_that_page(
 
     assert opened == [(path, 3)]
     assert page._details._open.text() == "Open at page 3"
+
+
+def test_details_panel_closes_with_button_and_escape(
+    window: MainWindow,
+    tmp_path: Path,
+) -> None:
+    from PySide6.QtCore import Qt
+    from PySide6.QtTest import QTest
+
+    (tmp_path / "notes.md").write_text("# Notes", encoding="utf-8")
+    workspace = window._workspaces.create_workspace("Notes", None, "blue")
+    window._workspaces.open_workspace(workspace.id)
+    window.workspace_view._import_files([tmp_path / "notes.md"])
+
+    page = window.workspace_view.library_page
+    wait_until(lambda: len(page._model.documents) == 1)
+
+    # Close button
+    page._table.selectRow(0)
+    wait_until(lambda: page._details.isVisible())
+    page._details.close_requested.emit()
+    assert not page._details.isVisible()
+    assert not page._table.selectionModel().hasSelection()
+
+    # Escape key
+    page._table.selectRow(0)
+    wait_until(lambda: page._details.isVisible())
+    page._table.setFocus()
+    QTest.keyClick(page._table, Qt.Key.Key_Escape)
+    wait_until(lambda: not page._details.isVisible())
+    assert not page._table.selectionModel().hasSelection()

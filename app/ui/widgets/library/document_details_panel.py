@@ -3,14 +3,15 @@ from __future__ import annotations
 from pathlib import Path
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QFrame, QGridLayout, QLabel, QVBoxLayout
+from PySide6.QtWidgets import QFrame, QGridLayout, QLabel, QPushButton, QVBoxLayout
 
 from app.documents.domain import Document, DocumentProcessingStatus
 from app.ui.formatting import format_size, format_timestamp
 from app.ui.platform import show_in_folder
 from app.ui.theme import mono_font
+from app.ui.theme.icons import icon
 from app.ui.theme import tokens as t
-from app.ui.widgets.common import clear_layout, StatusChip, button, label, type_badge, vbox
+from app.ui.widgets.common import StatusChip, button, clear_layout, hbox, label, type_badge, vbox
 
 
 class DocumentDetailsPanel(QFrame):
@@ -19,6 +20,7 @@ class DocumentDetailsPanel(QFrame):
     remove_requested = Signal(object)  # Document
     retry_requested = Signal(object)  # Document
     open_requested = Signal(object, object)  # Document, page (int | None)
+    close_requested = Signal()
 
     def __init__(self) -> None:
         super().__init__()
@@ -30,6 +32,15 @@ class DocumentDetailsPanel(QFrame):
 
         self._badge_holder = QVBoxLayout()
         self._badge_holder.setContentsMargins(0, 0, 0, 0)
+
+        close = QPushButton()
+        close.setProperty("variant", "ghost")
+        close.setIcon(icon("close", t.MUTED, 16, 2.5))
+        close.setFixedSize(32, 32)
+        close.setToolTip("Close details (Esc)")
+        close.setAccessibleName("Close details")
+        close.setCursor(Qt.CursorShape.PointingHandCursor)
+        close.clicked.connect(self.close_requested)
 
         self._name = label("", wrap=True)
         self._name.setStyleSheet("font-size: 18px; font-weight: 600;")
@@ -91,7 +102,7 @@ class DocumentDetailsPanel(QFrame):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(24, 28, 24, 28)
         layout.setSpacing(20)
-        layout.addLayout(self._badge_holder)
+        layout.addLayout(hbox(self._badge_holder, 1, close))
         layout.addWidget(self._name)
         layout.addWidget(self._status, 0, Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self._open, 0, Qt.AlignmentFlag.AlignLeft)

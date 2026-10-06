@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from PySide6.QtCore import QItemSelection, QModelIndex, Qt, QTimer, Signal
-from PySide6.QtGui import QDragEnterEvent, QDragLeaveEvent, QDropEvent
+from PySide6.QtGui import QDragEnterEvent, QDragLeaveEvent, QDropEvent, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QButtonGroup,
@@ -155,6 +155,12 @@ class LibraryPage(QWidget):
         self._details.remove_requested.connect(self._confirm_remove)
         self._details.retry_requested.connect(self._on_retry)
         self._details.open_requested.connect(self._open_document)
+        self._details.close_requested.connect(self.close_details)
+
+        # Esc closes the details panel (when it is open).
+        close_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Escape), self)
+        close_shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        close_shortcut.activated.connect(self.close_details)
 
         # Assemble ----------------------------------------------------------------
         self._empty = EmptyLibraryWidget()
@@ -327,6 +333,12 @@ class LibraryPage(QWidget):
 
         self._results.show_results(results, reading)
         self._browse.setCurrentIndex(1)
+
+    def close_details(self) -> None:
+        """Hide the details panel and clear the selected row."""
+        self._details.show_document(None)
+        self._table.clearSelection()
+        self._results.clear_selection()
 
     def _find_document(self, document_id: str) -> Document | None:
         return next((d for d in self._model.documents if d.id == document_id), None)
