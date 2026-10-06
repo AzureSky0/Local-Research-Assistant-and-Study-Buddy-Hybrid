@@ -131,3 +131,24 @@ class DocumentRepository:
 
         return int(result.rowcount or 0)  # type: ignore[attr-defined]
 
+    def search_by_name(
+        self,
+        workspace_id: str,
+        text: str,
+        limit: int,
+    ) -> list[DocumentORM]:
+        """Documents whose file name contains the text (case-insensitive)."""
+        # Treat % and _ typed by the user as literal characters.
+        escaped = text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+        statement = (
+            select(DocumentORM)
+            .where(
+                DocumentORM.workspace_id == workspace_id,
+                DocumentORM.file_name.ilike(f"%{escaped}%", escape="\\"),
+            )
+            .order_by(DocumentORM.file_name)
+            .limit(limit)
+        )
+
+        return list(self._session.scalars(statement))

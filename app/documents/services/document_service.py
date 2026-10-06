@@ -73,3 +73,14 @@ class DocumentService:
 
         return True
 
+    def find_by_name(
+        self,
+        workspace_id: str,
+        text: str,
+        limit: int = 20,
+    ) -> list[Document]:
+        """Return workspace documents whose file name contains the text."""
+        return [
+            DocumentMapper.to_domain(document_orm)
+            for document_orm in self._repository.search_by_name(workspace_id, text, limit)
+        ]

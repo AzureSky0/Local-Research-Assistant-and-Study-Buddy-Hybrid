@@ -16,6 +16,7 @@ from app.database.engine import engine
 
 from app.documents.orm import DocumentORM  # noqa: F401
 from app.workspace.orm import WorkspaceORM  # noqa: F401
+from app.knowledge.orm.keyword_index_schema import is_keyword_index_table
 
 # Future imports
 # from app.knowledge.orm.knowledge_pack_orm import KnowledgePackORM
@@ -33,6 +34,18 @@ ensure_app_directories()
 target_metadata = Base.metadata
 
 
+def include_name(name: str | None, type_: str, parent_names: object) -> bool:
+    """Skip schema objects that are managed by hand-written SQL.
+
+    The FTS5 keyword index (a virtual table and its shadow tables)
+    cannot be expressed as ORM models.
+    """
+    if type_ == "table":
+        return not is_keyword_index_table(name)
+
+    return True
+
+
 def run_migrations_offline() -> None:
     """Run migrations in offline mode."""
 
@@ -43,6 +56,7 @@ def run_migrations_offline() -> None:
         compare_type=True,
         compare_server_default=True,
         render_as_batch=True,
+        include_name=include_name,
     )
 
     with context.begin_transaction():
@@ -53,16 +67,32 @@ def run_migrations_online() -> None:
     """Run migrations in online mode."""
 
     with engine.connect() as connection:
+        # Batch migrations rebuild tables (copy, drop, rename). With foreign
+        # keys enforced, dropping the old table would cascade-delete child
+        # rows, so enforcement is off while migrating and integrity is
+        # checked afterwards.
+        connection.exec_driver_sql("PRAGMA foreign_keys=OFF")
+        connection.commit()
+
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
             compare_type=True,
             compare_server_default=True,
             render_as_batch=True,
+            include_name=include_name,
         )
 
         with context.begin_transaction():
             context.run_migrations()
+
+        violations = connection.exec_driver_sql("PRAGMA foreign_key_check").fetchall()
+
+        if violations:
+            raise RuntimeError(
+                f"Migration left {len(violations)} broken foreign key reference(s): "
+                f"{violations[:5]}"
+            )
 
 
 if context.is_offline_mode():

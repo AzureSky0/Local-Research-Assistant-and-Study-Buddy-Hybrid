@@ -16,6 +16,7 @@ from app.documents.exceptions import ExtractionError
 from app.documents.extraction.extractor_registry import default_extractor_registry
 from app.documents.mapper.document_mapper import DocumentMapper
 from app.documents.processing.extract_text_stage import ExtractTextStage
+from app.documents.processing.keyword_index_stage import KeywordIndexStage
 from app.documents.processing.processing_stage import (
     ProcessingCancelledError,
     ProcessingContext,
@@ -36,7 +37,10 @@ DocumentCallback = Callable[[Document], None]
 
 def default_stages() -> list[ProcessingStage]:
     """The processing pipeline, in order."""
-    return [ExtractTextStage(default_extractor_registry())]
+    return [
+        ExtractTextStage(default_extractor_registry()),
+        KeywordIndexStage(),
+    ]
 
 
 class DocumentProcessingService:

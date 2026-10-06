@@ -66,7 +66,7 @@ def test_pdf_is_extracted_and_ready(session: Session, workspace_id: str, tmp_pat
 
     assert result is not None
     assert result.processing_status is DocumentProcessingStatus.READY
-    assert result.processed_stage is DocumentProcessingStage.EXTRACTED
+    assert result.processed_stage is DocumentProcessingStage.KEYWORD_INDEXED
     assert result.page_count == 2
     assert result.extractor_version is not None
     texts = page_texts(session, document.id)

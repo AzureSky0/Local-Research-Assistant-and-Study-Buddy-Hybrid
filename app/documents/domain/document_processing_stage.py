@@ -11,6 +11,7 @@ class DocumentProcessingStage(StrEnum):
 
     REGISTERED = "registered"
     EXTRACTED = "extracted"
+    KEYWORD_INDEXED = "keyword_indexed"
 
 
 STAGE_ORDER: list[DocumentProcessingStage] = list(DocumentProcessingStage)

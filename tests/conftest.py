@@ -13,6 +13,9 @@ from app.workspace.services.workspace_service import WorkspaceService
 import app.documents.orm  # noqa: F401
 import app.workspace.orm  # noqa: F401
 
+# Registers the FTS5 keyword index so create_all() creates it.
+import app.knowledge.orm.keyword_index_schema  # noqa: F401
+
 
 @pytest.fixture
 def session() -> Generator[Session, None, None]:
