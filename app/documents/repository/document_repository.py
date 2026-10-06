@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.documents.orm import DocumentORM
@@ -59,3 +59,21 @@ class DocumentRepository:
         return list(
             self._session.scalars(statement)
         )
+
+    def count_by_workspace(self) -> dict[str, int]:
+        """Return the number of documents in each workspace."""
+        statement = select(
+            DocumentORM.workspace_id,
+            func.count(DocumentORM.id),
+        ).group_by(DocumentORM.workspace_id)
+
+        return {
+            workspace_id: count
+            for workspace_id, count in self._session.execute(statement)
+        }
+
+    def delete(self, document: DocumentORM) -> None:
+        """Stage removal of a document record."""
+        self._session.delete(document)
+        self._session.flush()
+

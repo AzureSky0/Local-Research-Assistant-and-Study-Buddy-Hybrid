@@ -52,3 +52,24 @@ class DocumentService:
             DocumentMapper.to_domain(document_orm)
             for document_orm in documents_orm
         ]
+
+    def get_document_counts(self) -> dict[str, int]:
+        """Return the number of documents in each workspace."""
+        return self._repository.count_by_workspace()
+
+    def remove_document(self, document_id: str) -> bool:
+        """Remove a document from its workspace.
+
+        Only the application's record is removed. The user's original
+        file is never modified or deleted (FR-DOC-006).
+        """
+        document_orm = self._repository.get_by_id(document_id)
+
+        if document_orm is None:
+            return False
+
+        self._repository.delete(document_orm)
+        commit(self._session)
+
+        return True
+

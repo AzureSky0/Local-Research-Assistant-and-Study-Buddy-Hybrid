@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from concurrent.futures import Future
 from threading import Lock
 
@@ -67,6 +68,24 @@ class TaskHandle:
             )
 
         return self._future.result(timeout=timeout)
+
+    def add_done_callback(
+        self,
+        callback: Callable[[TaskResult], None],
+    ) -> None:
+        """Call `callback` with the task result once the task finishes.
+
+        The callback runs on the worker thread that finished the task,
+        or immediately on the calling thread if the task is already done.
+        """
+        if self._future is None:
+            raise RuntimeError(
+                "Task handle is not associated with a future."
+            )
+
+        self._future.add_done_callback(
+            lambda future: callback(future.result())
+        )
 
     @property
     def done(self) -> bool:

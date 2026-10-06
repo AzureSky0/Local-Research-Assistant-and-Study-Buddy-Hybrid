@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import logging
+from collections.abc import Callable, Iterable
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable
 from uuid import uuid4
 
 from sqlalchemy.exc import SQLAlchemyError
@@ -29,6 +29,12 @@ from app.documents.services.document_file_validator import DocumentFileValidator
 from app.documents.services.document_service import DocumentService
 
 logger = logging.getLogger(__name__)
+
+# Called after each file with (files done, total files, result of this file).
+ImportProgressCallback = Callable[[int, int, DocumentImportResult], None]
+
+# Returns True when the import should stop before the next file.
+CancellationCheck = Callable[[], bool]
 
 
 class DocumentImportService:
@@ -86,72 +92,32 @@ class DocumentImportService:
         self,
         workspace_id: str,
         file_paths: Iterable[Path],
+        on_progress: ImportProgressCallback | None = None,
+        is_cancelled: CancellationCheck | None = None,
     ) -> list[DocumentImportResult]:
         """
         Import multiple files into a workspace independently.
 
         One failed import does not stop the remaining files
-        from being processed.
+        from being processed. When cancelled, the import stops
+        before the next file; files already imported are kept.
         """
+
+        paths = list(file_paths)
+        total = len(paths)
 
         results: list[DocumentImportResult] = []
 
-        for file_path in file_paths:
-            try:
-                document = self.import_document(
-                    workspace_id,
-                    file_path,
-                )
+        for index, file_path in enumerate(paths, start=1):
+            if is_cancelled is not None and is_cancelled():
+                logger.info("Import cancelled after %d of %d files", index - 1, total)
+                break
 
-                results.append(
-                    DocumentImportResult(
-                        file_path=str(file_path),
-                        status=DocumentImportStatus.IMPORTED,
-                        document=document,
-                    )
-                )
+            result = self._import_one(workspace_id, file_path)
+            results.append(result)
 
-            except DocumentAlreadyImportedError as error:
-                results.append(
-                    DocumentImportResult(
-                        file_path=str(file_path),
-                        status=DocumentImportStatus.ALREADY_IMPORTED,
-                        error=str(error),
-                    )
-                )
-
-            except UnsupportedDocumentTypeError as error:
-                logger.info("Skipped unsupported file %s", file_path)
-
-                results.append(
-                    DocumentImportResult(
-                        file_path=str(file_path),
-                        status=DocumentImportStatus.UNSUPPORTED,
-                        error=str(error),
-                    )
-                )
-
-            except (InvalidDocumentError, OSError, ValueError) as error:
-                logger.warning("Failed to import %s: %s", file_path, error)
-
-                results.append(
-                    DocumentImportResult(
-                        file_path=str(file_path),
-                        status=DocumentImportStatus.FAILED,
-                        error=str(error),
-                    )
-                )
-
-            except SQLAlchemyError as error:
-                logger.exception("Database error while importing %s", file_path)
-
-                results.append(
-                    DocumentImportResult(
-                        file_path=str(file_path),
-                        status=DocumentImportStatus.FAILED,
-                        error=f"Could not save document: {error}",
-                    )
-                )
+            if on_progress is not None:
+                on_progress(index, total, result)
 
         return results
 
@@ -160,13 +126,16 @@ class DocumentImportService:
         workspace_id: str,
         folder: Path,
         recursive: bool = True,
+        on_progress: ImportProgressCallback | None = None,
+        is_cancelled: CancellationCheck | None = None,
     ) -> list[DocumentImportResult]:
         """
         Import every supported document found in a folder.
 
-        Unsupported files are reported as unsupported, and folders
-        that cannot be read are reported as failed. Neither stops
-        the rest of the import.
+        Smaller files are imported first so they become available
+        sooner (Decision 031). Unsupported files are reported as
+        unsupported, and folders that cannot be read are reported as
+        failed. Neither stops the rest of the import.
         """
 
         discovery = self._discovery_service.discover(
@@ -176,7 +145,9 @@ class DocumentImportService:
 
         results = self.import_documents(
             workspace_id,
-            discovery.supported_files,
+            smallest_first(discovery.supported_files),
+            on_progress=on_progress,
+            is_cancelled=is_cancelled,
         )
 
         results.extend(
@@ -199,6 +170,59 @@ class DocumentImportService:
 
         return results
 
+    def _import_one(
+        self,
+        workspace_id: str,
+        file_path: Path,
+    ) -> DocumentImportResult:
+        """Import one file and describe the outcome without raising."""
+
+        try:
+            document = self.import_document(
+                workspace_id,
+                file_path,
+            )
+
+        except DocumentAlreadyImportedError as error:
+            return DocumentImportResult(
+                file_path=str(file_path),
+                status=DocumentImportStatus.ALREADY_IMPORTED,
+                error=str(error),
+            )
+
+        except UnsupportedDocumentTypeError as error:
+            logger.info("Skipped unsupported file %s", file_path)
+
+            return DocumentImportResult(
+                file_path=str(file_path),
+                status=DocumentImportStatus.UNSUPPORTED,
+                error=str(error),
+            )
+
+        except (InvalidDocumentError, OSError, ValueError) as error:
+            logger.warning("Failed to import %s: %s", file_path, error)
+
+            return DocumentImportResult(
+                file_path=str(file_path),
+                status=DocumentImportStatus.FAILED,
+                error=str(error),
+            )
+
+        except SQLAlchemyError as error:
+            logger.exception("Database error while importing %s", file_path)
+
+            return DocumentImportResult(
+                file_path=str(file_path),
+                status=DocumentImportStatus.FAILED,
+                error=f"Could not save document: {error}",
+            )
+
+        return DocumentImportResult(
+            file_path=str(file_path),
+            status=DocumentImportStatus.IMPORTED,
+            document=document,
+        )
+
     @staticmethod
     def _calculate_checksum(
         file_path: Path,
@@ -212,3 +236,19 @@ class DocumentImportService:
                 sha256.update(chunk)
 
         return sha256.hexdigest()
+
+
+def smallest_first(file_paths: Iterable[Path]) -> list[Path]:
+    """Order files by size so small documents become available first.
+
+    Files whose size cannot be read keep their place at the end,
+    where validation will report the problem.
+    """
+
+    def size_key(path: Path) -> tuple[int, int]:
+        try:
+            return (0, path.stat().st_size)
+        except OSError:
+            return (1, 0)
+
+    return sorted(file_paths, key=size_key)
