@@ -194,3 +194,22 @@ def test_unsafe_input_never_errors(
 
     for typed in ['"', "*", "NEAR(", "a OR", "-x", "^start", "col:value", "(((", "'; DROP TABLE"]:
         search.search(workspace_id, typed)
+
+
+def test_one_long_document_does_not_hide_others(
+    session: Session, workspace_id: str, search: KeywordSearchService
+) -> None:
+    add_document(session, workspace_id, "book.pdf", ["neural networks chapter"] * 40)
+    add_document(session, workspace_id, "notes.pdf", ["my notes on neural networks"])
+
+    results = search.search(workspace_id, "neural networks")
+
+    by_document: dict[str, int] = {}
+    for passage in results.passages:
+        by_document[passage.file_name] = by_document.get(passage.file_name, 0) + 1
+
+    assert by_document == {"book.pdf": 3, "notes.pdf": 1}
+    assert results.total_passages == 41
+    assert results.total_documents == 2
+    book_passage = next(p for p in results.passages if p.file_name == "book.pdf")
+    assert book_passage.pages_in_document == 40

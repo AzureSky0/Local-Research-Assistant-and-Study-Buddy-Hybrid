@@ -8,6 +8,7 @@ from app.knowledge.repository.keyword_index_repository import KeywordIndexReposi
 from app.knowledge.services.search_query import build_match_query
 
 MAX_PASSAGES = 50
+PASSAGES_PER_DOCUMENT = 3
 MAX_NAME_MATCHES = 20
 
 
@@ -54,11 +55,15 @@ class KeywordSearchService:
         match_query = build_match_query(query)
 
         if match_query is not None:
-            results.passages = self._index.search(workspace_id, match_query, limit)
-            results.total_passages = (
-                len(results.passages)
-                if len(results.passages) < limit
-                else self._index.count(workspace_id, match_query)
+            results.passages = self._index.search(
+                workspace_id,
+                match_query,
+                limit,
+                PASSAGES_PER_DOCUMENT,
+            )
+            results.total_passages, results.total_documents = self._index.count(
+                workspace_id,
+                match_query,
             )
 
         return results

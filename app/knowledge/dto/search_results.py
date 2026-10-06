@@ -27,6 +27,7 @@ class PassageMatch:
     page_number: int
     snippet: str  # matched words wrapped in HIGHLIGHT_START / HIGHLIGHT_END
     score: float  # lower is more relevant (FTS5 bm25)
+    pages_in_document: int  # how many pages of this document match in total
 
 
 @dataclass(slots=True)
@@ -35,11 +36,9 @@ class SearchResults:
     name_matches: list[DocumentMatch] = field(default_factory=list)
     passages: list[PassageMatch] = field(default_factory=list)
     total_passages: int = 0
+    total_documents: int = 0
 
     @property
     def is_empty(self) -> bool:
         return not self.name_matches and not self.passages
 
-    @property
-    def document_count(self) -> int:
-        return len({passage.document_id for passage in self.passages})

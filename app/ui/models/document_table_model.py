@@ -151,18 +151,12 @@ class DocumentTableModel(QAbstractTableModel):
 
 
 class DocumentFilterProxyModel(QSortFilterProxyModel):
-    """Filters documents by name and by status group."""
+    """Filters documents by status group."""
 
     def __init__(self) -> None:
         super().__init__()
-        self._text = ""
         self._status_group = FILTER_ALL
         self.setSortRole(SORT_ROLE)
-
-    def set_text(self, text: str) -> None:
-        self.beginFilterChange()
-        self._text = text.strip().casefold()
-        self.endFilterChange(QSortFilterProxyModel.Direction.Rows)
 
     def set_status_group(self, group: str) -> None:
         self.beginFilterChange()
@@ -170,14 +164,10 @@ class DocumentFilterProxyModel(QSortFilterProxyModel):
         self.endFilterChange(QSortFilterProxyModel.Direction.Rows)
 
     def filterAcceptsRow(self, source_row: int, source_parent: ModelIndex) -> bool:
-        model = self.sourceModel()
-        index = model.index(source_row, NAME_COLUMN, source_parent)
-        document: Document = model.data(index, DOCUMENT_ROLE)
-
-        if self._text and self._text not in document.file_name.casefold():
-            return False
-
         if self._status_group == FILTER_ALL:
             return True
+
+        model = self.sourceModel()
+        index = model.index(source_row, NAME_COLUMN, source_parent)
 
         return bool(model.data(index, STATUS_GROUP_ROLE) == self._status_group)

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QItemSelection, QModelIndex, Qt, Signal
+from PySide6.QtCore import QItemSelection, QModelIndex, Qt, QTimer, Signal
 from PySide6.QtGui import QDragEnterEvent, QDragLeaveEvent, QDropEvent
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -35,10 +35,13 @@ from app.ui.theme import tokens as t
 from app.ui.widgets.common import STATUS_LOOKS, SearchField, button, hbox, label, vbox
 from app.ui.widgets.library.document_details_panel import DocumentDetailsPanel
 from app.ui.widgets.library.empty_library_widget import EmptyLibraryWidget
+from app.ui.widgets.library.search_results_view import SearchResultsView
 
 FILE_DIALOG_FILTER = "Documents ({})".format(
     " ".join(f"*{extension}" for extension in SUPPORTED_EXTENSIONS)
 )
+
+SEARCH_DELAY_MS = 200
 
 STATUS_FILTERS = [
     (FILTER_ALL, "All"),
@@ -82,7 +85,16 @@ class LibraryPage(QWidget):
         )
 
         # Toolbar -------------------------------------------------------------
-        self._search = SearchField("Search documents by name")
+        self._search = SearchField("Search names and text inside documents")
+
+        # Wait until typing pauses before searching.
+        self._search_timer = QTimer(self)
+        self._search_timer.setSingleShot(True)
+        self._search_timer.setInterval(SEARCH_DELAY_MS)
+        self._search_timer.timeout.connect(self._run_search)
+
+        self._results = SearchResultsView()
+        self._results.document_selected.connect(self._show_document_by_id)
 
         self._filter_group = QButtonGroup(self)
         self._filter_group.setExclusive(True)
@@ -145,16 +157,25 @@ class LibraryPage(QWidget):
         self._empty.add_files_requested.connect(self.choose_files)
         self._empty.add_folder_requested.connect(self.choose_folder)
 
-        list_view = QWidget()
-        list_layout = vbox(
-            self._search,
+        table_view = QWidget()
+        table_layout = vbox(
             hbox(filters, 1),
             self._table,
             self._no_matches,
             tip,
             spacing=16,
         )
-        list_layout.setStretchFactor(self._table, 1)
+        table_layout.setStretchFactor(self._table, 1)
+        table_view.setLayout(table_layout)
+
+        # While searching, the results replace the table.
+        self._browse = QStackedWidget()
+        self._browse.addWidget(table_view)
+        self._browse.addWidget(self._results)
+
+        list_view = QWidget()
+        list_layout = vbox(self._search, self._browse, spacing=16)
+        list_layout.setStretchFactor(self._browse, 1)
         list_view.setLayout(list_layout)
 
         self._content = QStackedWidget()
@@ -172,7 +193,7 @@ class LibraryPage(QWidget):
         self.setLayout(layout)
 
         # Signals ---------------------------------------------------------------
-        self._search.input.textChanged.connect(self._on_filter_changed)
+        self._search.input.textChanged.connect(self._on_search_text_changed)
         self._filter_group.buttonClicked.connect(self._on_filter_changed)
         self._table.selectionModel().selectionChanged.connect(self._on_selection_changed)
         self._proxy.rowsInserted.connect(self._update_summary)
@@ -257,6 +278,10 @@ class LibraryPage(QWidget):
 
         self._update_summary()
 
+        # A document that just became ready may now match the search.
+        if self.is_searching:
+            self._search_timer.start()
+
     def _on_document_removed(self, document_id: str) -> None:
         self._model.remove_document(document_id)
         self._details.show_document(None)
@@ -265,9 +290,42 @@ class LibraryPage(QWidget):
         checked = self._filter_group.checkedButton()
         group = str(checked.property("filterKey")) if checked else FILTER_ALL
 
-        self._proxy.set_text(self._search.text())
         self._proxy.set_status_group(group)
         self._update_summary()
+
+    # Search ---------------------------------------------------------------------------
+
+    @property
+    def is_searching(self) -> bool:
+        return bool(self._search.text().strip())
+
+    def _on_search_text_changed(self) -> None:
+        if self.is_searching:
+            self._search_timer.start()
+        else:
+            self._search_timer.stop()
+            self._browse.setCurrentIndex(0)
+
+    def _run_search(self) -> None:
+        if not self.is_searching:
+            return
+
+        results = self._library.search(self._search.text())
+        reading = sum(
+            1
+            for document in self._model.documents
+            if document.processing_status
+            in (DocumentProcessingStatus.PENDING, DocumentProcessingStatus.PROCESSING)
+        )
+
+        self._results.show_results(results, reading)
+        self._browse.setCurrentIndex(1)
+
+    def _show_document_by_id(self, document_id: str) -> None:
+        for document in self._model.documents:
+            if document.id == document_id:
+                self._details.show_document(document)
+                return
 
     def _on_selection_changed(self, selected: QItemSelection, deselected: QItemSelection) -> None:
         indexes = self._table.selectionModel().selectedRows()

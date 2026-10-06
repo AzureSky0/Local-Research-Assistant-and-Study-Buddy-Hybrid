@@ -144,21 +144,33 @@ class SearchField(QFrame):
 
         self.input = QLineEdit()
         self.input.setPlaceholderText(placeholder)
-        self.input.setClearButtonEnabled(True)
         self.input.setProperty("embedded", "true")
         self.input.setAccessibleName(placeholder)
 
+        self._clear = QPushButton()
+        self._clear.setProperty("variant", "ghost")
+        self._clear.setIcon(icon("close", t.MUTED, 14, 2.5))
+        self._clear.setFixedSize(28, 28)
+        self._clear.setToolTip("Clear search")
+        self._clear.setAccessibleName("Clear search")
+        self._clear.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._clear.clicked.connect(self.clear)
+        self._clear.hide()
+        self.input.textChanged.connect(lambda text: self._clear.setVisible(bool(text)))
+
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(12, 0, 4, 0)
+        layout.setContentsMargins(12, 0, 6, 0)
         layout.setSpacing(8)
         layout.addWidget(icon_label("search", t.MUTED, 16))
         layout.addWidget(self.input, 1)
+        layout.addWidget(self._clear)
 
     def text(self) -> str:
         return self.input.text()
 
     def clear(self) -> None:
         self.input.clear()
+        self.input.setFocus()
 
 
 def repolish(widget: QWidget) -> None:

@@ -226,3 +226,47 @@ def test_scanned_pdf_shows_reason_and_can_be_retried(
         lambda: page._model.documents[0].processing_status is DocumentProcessingStatus.READY
     )
     assert not page._details._problem.isVisibleTo(page._details)
+
+
+def test_search_finds_text_inside_documents(
+    window: MainWindow,
+    tmp_path: Path,
+) -> None:
+    import pymupdf
+
+    from app.documents.domain import DocumentProcessingStatus
+
+    folder = tmp_path / "papers"
+    folder.mkdir()
+    document = pymupdf.open()
+    document.new_page().insert_text((72, 72), "Introduction")
+    document.new_page().insert_text((72, 72), "Gradient descent with momentum")
+    document.save(folder / "optimizers.pdf")
+    document.close()
+    (folder / "gradient-notes.md").write_text("# Unrelated title", encoding="utf-8")
+
+    workspace = window._workspaces.create_workspace("Machine Learning", None, "blue")
+    window._workspaces.open_workspace(workspace.id)
+    window.workspace_view._import_folder(folder)
+
+    page = window.workspace_view.library_page
+    wait_until(
+        lambda: len(page._model.documents) == 2
+        and all(d.processing_status is DocumentProcessingStatus.READY for d in page._model.documents)
+    )
+
+    page._search.input.setText("gradient")
+    wait_until(lambda: page._browse.currentIndex() == 1)
+
+    results = page._results
+    # Two sections (file names, inside documents) plus one row each.
+    assert results.row_count == 4
+    assert "1 page in 1 document" in results._summary.text()
+
+    passage_index = results._model.index(3, 0)
+    results._list.clicked.emit(passage_index)
+    assert page._details.document is not None
+    assert page._details.document.file_name == "optimizers.pdf"
+
+    page._search.input.clear()
+    wait_until(lambda: page._browse.currentIndex() == 0)
