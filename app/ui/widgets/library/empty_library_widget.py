@@ -29,17 +29,16 @@ class EmptyLibraryWidget(QFrame):
 
         tile = icon_tile("upload", t.ACCENT, t.ACCENT_SOFT, size=64, icon_size=30)
 
-        title = label("Add your study material")
+        title = label("Add your documents")
         title.setStyleSheet("font-size: 20px; font-weight: 600;")
 
         message = label(
-            "Drop files or a whole folder here. Large collections are fine — "
-            "you can keep working while they are added.",
+            "Drop papers, books, notes or reports here — or a whole folder.\n"
+            "Large collections are fine; you can keep working while they are added.",
             "muted",
             wrap=True,
         )
         message.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        message.setMaximumWidth(460)
 
         add_files = button("Add files", "primary", "file", "#FFFFFF")
         add_files.clicked.connect(self.add_files_requested)
@@ -72,7 +71,7 @@ class EmptyLibraryWidget(QFrame):
         layout.addStretch(1)
         layout.addWidget(tile, 0, Qt.AlignmentFlag.AlignHCenter)
         layout.addWidget(title, 0, Qt.AlignmentFlag.AlignHCenter)
-        layout.addWidget(message, 0, Qt.AlignmentFlag.AlignHCenter)
+        layout.addWidget(message)
         layout.addLayout(hbox(1, add_files, add_folder, 1, spacing=10))
         layout.addLayout(formats)
         layout.addLayout(privacy)

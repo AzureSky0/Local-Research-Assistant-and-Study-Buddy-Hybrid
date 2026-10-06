@@ -47,7 +47,7 @@ class SettingsPage(QWidget):
             "About",
             f"{settings.app_name}",
             f"Version {settings.app_version}",
-            "A local-first study and research workspace. Your files never leave your computer.",
+            "A local-first workspace for reading, research and study. Your files never leave your computer.",
             None,
             None,
         )
