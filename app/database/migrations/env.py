@@ -2,6 +2,7 @@ from logging.config import fileConfig
 
 from alembic import context
 
+from app.core.paths import ensure_app_directories
 from app.database.base import Base
 from app.database.engine import engine
 
@@ -22,8 +23,12 @@ from app.workspace.orm import WorkspaceORM  # noqa: F401
 
 config = context.config
 
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+# When migrations run from inside the application, the application's
+# logging configuration is kept (see app.database.init_db).
+if config.config_file_name is not None and config.attributes.get("configure_logging", True):
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
+
+ensure_app_directories()
 
 target_metadata = Base.metadata
 
@@ -37,6 +42,7 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         compare_type=True,
         compare_server_default=True,
+        render_as_batch=True,
     )
 
     with context.begin_transaction():
@@ -52,6 +58,7 @@ def run_migrations_online() -> None:
             target_metadata=target_metadata,
             compare_type=True,
             compare_server_default=True,
+            render_as_batch=True,
         )
 
         with context.begin_transaction():

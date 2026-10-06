@@ -9,7 +9,10 @@ project_helper/
 __pycache__/
 *.pyc
 *$py.class
-data/database/*.db
+# Local application data (used when LRA_DATA_DIR points inside the repo)
+data/
+*.db-wal
+*.db-shm
 
 # VS Code
 .vscode/

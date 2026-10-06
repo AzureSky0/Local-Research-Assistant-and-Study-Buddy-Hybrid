@@ -11,6 +11,7 @@ class DocumentMapper:
     def to_orm(document: Document) -> DocumentORM:
         return DocumentORM(
             id=document.id,
+            workspace_id=document.workspace_id,
             file_name=document.file_name,
             original_path=document.original_path,
             file_size=document.file_size,
@@ -24,6 +25,7 @@ class DocumentMapper:
     def to_domain(document_orm: DocumentORM) -> Document:
         return Document(
             id=document_orm.id,
+            workspace_id=document_orm.workspace_id,
             file_name=document_orm.file_name,
             original_path=document_orm.original_path,
             file_size=document_orm.file_size,

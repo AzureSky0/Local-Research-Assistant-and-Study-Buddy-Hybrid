@@ -7,16 +7,19 @@ from app.documents.orm import DocumentORM
 
 
 class DocumentRepository:
-    """Handles database persistence for documents."""
+    """Handles database persistence for documents.
+
+    The repository never commits. Transaction boundaries belong
+    to the service layer.
+    """
 
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    def create(self, document: DocumentORM) -> DocumentORM:
-        """Persist a new document."""
+    def add(self, document: DocumentORM) -> DocumentORM:
+        """Stage a new document and flush it to the database."""
         self._session.add(document)
-        self._session.commit()
-        self._session.refresh(document)
+        self._session.flush()
 
         return document
 
@@ -29,20 +32,29 @@ class DocumentRepository:
 
     def get_by_checksum(
         self,
+        workspace_id: str,
         checksum: str,
     ) -> DocumentORM | None:
-        """Return a document matching the given checksum."""
+        """Return the workspace document matching the given checksum."""
         statement = select(DocumentORM).where(
-            DocumentORM.checksum == checksum
+            DocumentORM.workspace_id == workspace_id,
+            DocumentORM.checksum == checksum,
         )
 
         return self._session.scalars(
             statement
         ).first()
 
-    def get_all(self) -> list[DocumentORM]:
-        """Return all documents."""
-        statement = select(DocumentORM)
+    def list_by_workspace(
+        self,
+        workspace_id: str,
+    ) -> list[DocumentORM]:
+        """Return all documents in a workspace, oldest import first."""
+        statement = (
+            select(DocumentORM)
+            .where(DocumentORM.workspace_id == workspace_id)
+            .order_by(DocumentORM.imported_at)
+        )
 
         return list(
             self._session.scalars(statement)

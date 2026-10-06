@@ -7,16 +7,19 @@ from app.workspace.orm import WorkspaceORM
 
 
 class WorkspaceRepository:
-    """Handles database persistence for workspaces."""
+    """Handles database persistence for workspaces.
+
+    The repository never commits. Transaction boundaries belong
+    to the service layer.
+    """
 
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    def create(self, workspace: WorkspaceORM) -> WorkspaceORM:
-        """Persist a new workspace."""
+    def add(self, workspace: WorkspaceORM) -> WorkspaceORM:
+        """Stage a new workspace and flush it to the database."""
         self._session.add(workspace)
-        self._session.commit()
-        self._session.refresh(workspace)
+        self._session.flush()
 
         return workspace
 
@@ -39,22 +42,19 @@ class WorkspaceRepository:
             self._session.scalars(statement)
         )
 
-    def update(self, workspace: WorkspaceORM) -> WorkspaceORM:
-        """Persist changes to an existing workspace."""
-        self._session.commit()
-        self._session.refresh(workspace)
+    def get_archived(self) -> list[WorkspaceORM]:
+        """Return all archived workspaces ordered by name."""
+        statement = (
+            select(WorkspaceORM)
+            .where(WorkspaceORM.is_archived.is_(True))
+            .order_by(WorkspaceORM.name)
+        )
 
-        return workspace
+        return list(
+            self._session.scalars(statement)
+        )
 
     def delete(self, workspace: WorkspaceORM) -> None:
-        """Permanently delete a workspace."""
+        """Stage permanent deletion of a workspace."""
         self._session.delete(workspace)
-        self._session.commit()
-
-    def archive(self, workspace: WorkspaceORM) -> WorkspaceORM:
-        """Archive a workspace without permanently deleting it."""
-        workspace.is_archived = True
-        self._session.commit()
-        self._session.refresh(workspace)
-
-        return workspace
+        self._session.flush()

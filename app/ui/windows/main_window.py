@@ -10,16 +10,12 @@ from app.ui.pages.research_page import ResearchPage
 from app.ui.pages.settings_page import SettingsPage
 from app.ui.pages.study_page import StudyPage
 from app.ui.widgets.sidebar import Sidebar
-from app.database.init_db import initialize_database
 
 
 
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-
-
-        initialize_database()   
 
         self.setWindowTitle(
             "Local Research Assistant + Study Buddy Hybrid"

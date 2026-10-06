@@ -1,4 +1,9 @@
+from datetime import UTC, datetime
+
 from sqlalchemy.orm import Session
+
+from app.documents.domain import Document, DocumentProcessingStatus
+from app.documents.services.document_service import DocumentService
 
 from app.workspace.domain.workspace import Workspace
 from app.workspace.dto.workspace_create import WorkspaceCreateDTO
@@ -157,3 +162,71 @@ def test_missing_workspace_operations(
     assert service.delete_workspace(workspace_id) is False
 
     assert service.open_workspace(workspace_id) is None
+
+def test_restore_workspace(session: Session) -> None:
+    service = WorkspaceService(session)
+
+    workspace = service.create_workspace(
+        WorkspaceCreateDTO(name="Old Project")
+    )
+    service.archive_workspace(workspace.id)
+
+    assert [w.id for w in service.list_archived_workspaces()] == [workspace.id]
+
+    restored = service.restore_workspace(workspace.id)
+
+    assert restored is not None
+    assert restored.is_archived is False
+    assert [w.id for w in service.list_workspaces()] == [workspace.id]
+    assert service.list_archived_workspaces() == []
+
+
+def test_workspace_timestamps_are_timezone_aware_utc(
+    session: Session,
+) -> None:
+    service = WorkspaceService(session)
+
+    workspace = service.create_workspace(
+        WorkspaceCreateDTO(name="Timestamps")
+    )
+    service.open_workspace(workspace.id)
+
+    session.expire_all()
+
+    loaded = service.get_workspace(workspace.id)
+
+    assert loaded is not None
+    assert loaded.created_at.tzinfo is UTC
+    assert loaded.updated_at.tzinfo is UTC
+    assert loaded.last_opened_at is not None
+    assert loaded.last_opened_at.tzinfo is UTC
+
+
+def test_delete_workspace_removes_its_documents(
+    session: Session,
+) -> None:
+    workspace_service = WorkspaceService(session)
+    document_service = DocumentService(session)
+
+    workspace = workspace_service.create_workspace(
+        WorkspaceCreateDTO(name="Temporary")
+    )
+
+    document_service.create_document(
+        Document(
+            id="doc-1",
+            workspace_id=workspace.id,
+            file_name="notes.md",
+            original_path=r"D:\Temp\notes.md",
+            file_size=10,
+            checksum="checksum",
+            file_type="md",
+            imported_at=datetime.now(UTC),
+            processing_status=DocumentProcessingStatus.PENDING,
+        )
+    )
+
+    workspace_service.delete_workspace(workspace.id)
+    session.expire_all()
+
+    assert document_service.get_documents(workspace.id) == []

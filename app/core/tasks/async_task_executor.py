@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from concurrent.futures import ThreadPoolExecutor
 
 from app.core.tasks.task import Task, TaskProgressCallback
@@ -11,6 +12,8 @@ from app.core.tasks.task_handle import TaskHandle
 from app.core.tasks.task_progress import TaskProgress
 from app.core.tasks.task_result import TaskResult
 from app.core.tasks.task_status import TaskStatus
+
+logger = logging.getLogger(__name__)
 
 
 class AsyncTaskExecutor:
@@ -95,6 +98,8 @@ class AsyncTaskExecutor:
             )
 
         except Exception as error:
+            logger.exception("Task failed: %s", task.name)
+
             handle.update_status(TaskStatus.FAILED)
 
             return TaskResult(

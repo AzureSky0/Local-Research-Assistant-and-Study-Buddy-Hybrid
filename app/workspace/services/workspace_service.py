@@ -5,10 +5,12 @@ from uuid import uuid4
 
 from sqlalchemy.orm import Session
 
+from app.database.transaction import commit
 from app.workspace.domain.workspace import Workspace
 from app.workspace.dto.workspace_create import WorkspaceCreateDTO
 from app.workspace.dto.workspace_update import WorkspaceUpdateDTO
 from app.workspace.mapper.workspace_mapper import WorkspaceMapper
+from app.workspace.orm import WorkspaceORM
 from app.workspace.repository.workspace_repository import WorkspaceRepository
 
 
@@ -16,6 +18,7 @@ class WorkspaceService:
     """Provides business operations for workspaces."""
 
     def __init__(self, session: Session) -> None:
+        self._session = session
         self._repository = WorkspaceRepository(session)
 
     def create_workspace(
@@ -42,13 +45,9 @@ class WorkspaceService:
             workspace
         )
 
-        saved_workspace = self._repository.create(
-            workspace_orm
-        )
+        self._repository.add(workspace_orm)
 
-        return WorkspaceMapper.to_domain(
-            saved_workspace
-        )
+        return self._save(workspace_orm)
 
     def rename_workspace(
         self,
@@ -66,13 +65,7 @@ class WorkspaceService:
 
         workspace_orm.name = name
 
-        saved_workspace = self._repository.update(
-            workspace_orm
-        )
-
-        return WorkspaceMapper.to_domain(
-            saved_workspace
-        )
+        return self._save(workspace_orm)
 
     def update_workspace(
         self,
@@ -103,13 +96,7 @@ class WorkspaceService:
         if data.is_archived is not None:
             workspace_orm.is_archived = data.is_archived
 
-        saved_workspace = self._repository.update(
-            workspace_orm
-        )
-
-        return WorkspaceMapper.to_domain(
-            saved_workspace
-        )
+        return self._save(workspace_orm)
 
     def archive_workspace(
         self,
@@ -117,26 +104,24 @@ class WorkspaceService:
     ) -> Workspace | None:
         """Archive an existing workspace."""
 
-        workspace_orm = self._repository.get_by_id(
-            workspace_id
-        )
+        return self._set_archived(workspace_id, True)
 
-        if workspace_orm is None:
-            return None
+    def restore_workspace(
+        self,
+        workspace_id: str,
+    ) -> Workspace | None:
+        """Restore an archived workspace."""
 
-        archived_workspace = self._repository.archive(
-            workspace_orm
-        )
-
-        return WorkspaceMapper.to_domain(
-            archived_workspace
-        )
+        return self._set_archived(workspace_id, False)
 
     def delete_workspace(
         self,
         workspace_id: str,
     ) -> bool:
-        """Permanently delete an existing workspace."""
+        """Permanently delete a workspace and its document records.
+
+        The user's original source files are never touched.
+        """
 
         workspace_orm = self._repository.get_by_id(
             workspace_id
@@ -146,6 +131,7 @@ class WorkspaceService:
             return False
 
         self._repository.delete(workspace_orm)
+        commit(self._session)
 
         return True
 
@@ -164,13 +150,7 @@ class WorkspaceService:
 
         workspace_orm.last_opened_at = datetime.now(UTC)
 
-        saved_workspace = self._repository.update(
-            workspace_orm
-        )
-
-        return WorkspaceMapper.to_domain(
-            saved_workspace
-        )
+        return self._save(workspace_orm)
 
     def get_workspace(
         self,
@@ -192,11 +172,42 @@ class WorkspaceService:
     def list_workspaces(self) -> list[Workspace]:
         """Return all active workspaces."""
 
-        workspaces_orm = self._repository.get_all()
+        return [
+            WorkspaceMapper.to_domain(workspace_orm)
+            for workspace_orm in self._repository.get_all()
+        ]
+
+    def list_archived_workspaces(self) -> list[Workspace]:
+        """Return all archived workspaces."""
 
         return [
-            WorkspaceMapper.to_domain(
-                workspace_orm
-            )
-            for workspace_orm in workspaces_orm
+            WorkspaceMapper.to_domain(workspace_orm)
+            for workspace_orm in self._repository.get_archived()
         ]
+
+    def _set_archived(
+        self,
+        workspace_id: str,
+        is_archived: bool,
+    ) -> Workspace | None:
+        """Change the archive state of a workspace."""
+
+        workspace_orm = self._repository.get_by_id(
+            workspace_id
+        )
+
+        if workspace_orm is None:
+            return None
+
+        workspace_orm.is_archived = is_archived
+
+        return self._save(workspace_orm)
+
+    def _save(self, workspace_orm: WorkspaceORM) -> Workspace:
+        """Commit pending changes and return the saved workspace."""
+
+        commit(self._session)
+
+        return WorkspaceMapper.to_domain(
+            workspace_orm
+        )

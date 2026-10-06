@@ -6,7 +6,6 @@ from pathlib import Path
 import pytest
 
 from app.documents.exceptions import DocumentAlreadyImportedError
-from app.documents.repository.document_repository import DocumentRepository
 from app.documents.services.document_import_service import (
     DocumentImportService,
 )
@@ -14,22 +13,21 @@ from app.documents.dto.document_import_result import (
     DocumentImportStatus,
 )
 from app.documents.services.document_service import DocumentService
+from app.workspace.dto.workspace_create import WorkspaceCreateDTO
+from app.workspace.services.workspace_service import WorkspaceService
 
 
 def create_import_service(
     session,
 ) -> DocumentImportService:
-    repository = DocumentRepository(session)
-    document_service = DocumentService(session)
-
     return DocumentImportService(
-        repository=repository,
-        document_service=document_service,
+        document_service=DocumentService(session),
     )
 
 
 def test_import_document(
     session,
+    workspace_id: str,
     tmp_path: Path,
 ) -> None:
     file_path = tmp_path / "example.pdf"
@@ -39,8 +37,9 @@ def test_import_document(
 
     service = create_import_service(session)
 
-    document = service.import_document(file_path)
+    document = service.import_document(workspace_id, file_path)
 
+    assert document.workspace_id == workspace_id
     assert document.file_name == "example.pdf"
     assert document.original_path == str(file_path)
     assert document.file_size == len(content)
@@ -54,6 +53,7 @@ def test_import_document(
 
 def test_import_same_file_raises_duplicate_error(
     session,
+    workspace_id: str,
     tmp_path: Path,
 ) -> None:
     file_path = tmp_path / "example.pdf"
@@ -61,14 +61,12 @@ def test_import_same_file_raises_duplicate_error(
 
     service = create_import_service(session)
 
-    first_document = service.import_document(
-        file_path
-    )
+    first_document = service.import_document(workspace_id, file_path)
 
     with pytest.raises(
         DocumentAlreadyImportedError
     ) as exc_info:
-        service.import_document(file_path)
+        service.import_document(workspace_id, file_path)
 
     assert (
         exc_info.value.existing_document_id
@@ -78,6 +76,7 @@ def test_import_same_file_raises_duplicate_error(
 
 def test_import_identical_content_from_different_path_raises_duplicate_error(
     session,
+    workspace_id: str,
     tmp_path: Path,
 ) -> None:
     first_file = tmp_path / "first.pdf"
@@ -90,16 +89,17 @@ def test_import_identical_content_from_different_path_raises_duplicate_error(
 
     service = create_import_service(session)
 
-    service.import_document(first_file)
+    service.import_document(workspace_id, first_file)
 
     with pytest.raises(
         DocumentAlreadyImportedError
     ):
-        service.import_document(second_file)
+        service.import_document(workspace_id, second_file)
 
 
 def test_import_missing_file_raises_file_not_found_error(
     session,
+    workspace_id: str,
     tmp_path: Path,
 ) -> None:
     file_path = tmp_path / "missing.pdf"
@@ -107,11 +107,12 @@ def test_import_missing_file_raises_file_not_found_error(
     service = create_import_service(session)
 
     with pytest.raises(FileNotFoundError):
-        service.import_document(file_path)
+        service.import_document(workspace_id, file_path)
 
 
 def test_import_directory_raises_value_error(
     session,
+    workspace_id: str,
     tmp_path: Path,
 ) -> None:
     directory = tmp_path / "documents"
@@ -120,11 +121,12 @@ def test_import_directory_raises_value_error(
     service = create_import_service(session)
 
     with pytest.raises(ValueError):
-        service.import_document(directory)
+        service.import_document(workspace_id, directory)
 
 
 def test_import_does_not_copy_or_move_file(
     session,
+    workspace_id: str,
     tmp_path: Path,
 ) -> None:
     file_path = tmp_path / "example.pdf"
@@ -132,13 +134,14 @@ def test_import_does_not_copy_or_move_file(
 
     service = create_import_service(session)
 
-    service.import_document(file_path)
+    service.import_document(workspace_id, file_path)
 
     assert file_path.exists()
 
 
 def test_import_multiple_documents_continues_after_duplicate(
     session,
+    workspace_id: str,
     tmp_path: Path,
 ) -> None:
     first_file = tmp_path / "first.pdf"
@@ -152,6 +155,7 @@ def test_import_multiple_documents_continues_after_duplicate(
     service = create_import_service(session)
 
     results = service.import_documents(
+        workspace_id,
         [
             first_file,
             duplicate_file,
@@ -179,6 +183,7 @@ def test_import_multiple_documents_continues_after_duplicate(
 
 def test_import_multiple_documents_continues_after_invalid_file(
     session,
+    workspace_id: str,
     tmp_path: Path,
 ) -> None:
     valid_file = tmp_path / "valid.pdf"
@@ -191,6 +196,7 @@ def test_import_multiple_documents_continues_after_invalid_file(
     service = create_import_service(session)
 
     results = service.import_documents(
+        workspace_id,
         [
             valid_file,
             missing_file,
@@ -218,6 +224,7 @@ def test_import_multiple_documents_continues_after_invalid_file(
 
 def test_import_multiple_documents_continues_after_unreadable_file(
     session,
+    workspace_id: str,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -246,6 +253,7 @@ def test_import_multiple_documents_continues_after_unreadable_file(
     service = create_import_service(session)
 
     results = service.import_documents(
+        workspace_id,
         [
             unreadable_file,
             valid_file,
@@ -261,3 +269,27 @@ def test_import_multiple_documents_continues_after_unreadable_file(
         results[1].status
         == DocumentImportStatus.IMPORTED
     )
+
+
+def test_same_file_can_be_imported_into_different_workspaces(
+    session,
+    workspace_id: str,
+    tmp_path: Path,
+) -> None:
+    file_path = tmp_path / "shared.pdf"
+    file_path.write_bytes(b"Shared textbook content")
+
+    other_workspace = WorkspaceService(session).create_workspace(
+        WorkspaceCreateDTO(name="Other Workspace")
+    )
+
+    service = create_import_service(session)
+
+    first = service.import_document(workspace_id, file_path)
+    second = service.import_document(other_workspace.id, file_path)
+
+    assert first.checksum == second.checksum
+    assert first.id != second.id
+    assert first.workspace_id == workspace_id
+    assert second.workspace_id == other_workspace.id
+

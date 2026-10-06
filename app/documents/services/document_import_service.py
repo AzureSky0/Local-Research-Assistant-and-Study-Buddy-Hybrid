@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Iterable
 from uuid import uuid4
+
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.documents.domain import (
     Document,
@@ -15,8 +18,9 @@ from app.documents.dto.document_import_result import (
     DocumentImportStatus,
 )
 from app.documents.exceptions import DocumentAlreadyImportedError
-from app.documents.repository.document_repository import DocumentRepository
 from app.documents.services.document_service import DocumentService
+
+logger = logging.getLogger(__name__)
 
 
 class DocumentImportService:
@@ -24,24 +28,24 @@ class DocumentImportService:
 
     def __init__(
         self,
-        repository: DocumentRepository,
         document_service: DocumentService,
     ) -> None:
-        self._repository = repository
         self._document_service = document_service
 
     def import_document(
         self,
+        workspace_id: str,
         file_path: Path,
     ) -> Document:
-        """Import a single file and create its document record."""
+        """Import a single file into a workspace and create its document record."""
 
         self._validate_file(file_path)
 
         checksum = self._calculate_checksum(file_path)
 
-        existing_document = (
-            self._repository.get_by_checksum(checksum)
+        existing_document = self._document_service.find_by_checksum(
+            workspace_id,
+            checksum,
         )
 
         if existing_document is not None:
@@ -52,6 +56,7 @@ class DocumentImportService:
 
         document = Document(
             id=str(uuid4()),
+            workspace_id=workspace_id,
             file_name=file_path.name,
             original_path=str(file_path),
             file_size=file_path.stat().st_size,
@@ -67,10 +72,11 @@ class DocumentImportService:
 
     def import_documents(
         self,
+        workspace_id: str,
         file_paths: Iterable[Path],
     ) -> list[DocumentImportResult]:
         """
-        Import multiple files independently.
+        Import multiple files into a workspace independently.
 
         One failed import does not stop the remaining files
         from being processed.
@@ -80,7 +86,10 @@ class DocumentImportService:
 
         for file_path in file_paths:
             try:
-                document = self.import_document(file_path)
+                document = self.import_document(
+                    workspace_id,
+                    file_path,
+                )
 
                 results.append(
                     DocumentImportResult(
@@ -100,11 +109,24 @@ class DocumentImportService:
                 )
 
             except (OSError, ValueError) as error:
+                logger.warning("Failed to import %s: %s", file_path, error)
+
                 results.append(
                     DocumentImportResult(
                         file_path=str(file_path),
                         status=DocumentImportStatus.FAILED,
                         error=str(error),
+                    )
+                )
+
+            except SQLAlchemyError as error:
+                logger.exception("Database error while importing %s", file_path)
+
+                results.append(
+                    DocumentImportResult(
+                        file_path=str(file_path),
+                        status=DocumentImportStatus.FAILED,
+                        error=f"Could not save document: {error}",
                     )
                 )
 

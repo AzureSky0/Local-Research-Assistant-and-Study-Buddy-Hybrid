@@ -3,12 +3,13 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import DateTime, Integer, String, Enum
+from sqlalchemy import Enum, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.documents.domain import DocumentProcessingStatus
 
 from app.database.base import Base
+from app.database.types import UTCDateTime
 
 
 class DocumentORM(Base):
@@ -18,10 +19,30 @@ class DocumentORM(Base):
 
     __tablename__ = "documents"
 
+    __table_args__ = (
+        # The same file may be imported into different workspaces,
+        # but only once per workspace (Decision 021).
+        UniqueConstraint(
+            "workspace_id",
+            "checksum",
+            name="uq_documents_workspace_checksum",
+        ),
+    )
+
     id: Mapped[str] = mapped_column(
         String(36),
         primary_key=True,
         default=lambda: str(uuid4()),
+    )
+
+    workspace_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey(
+            "workspaces.id",
+            name="fk_documents_workspace_id_workspaces",
+            ondelete="CASCADE",
+        ),
+        nullable=False,
     )
 
     file_name: Mapped[str] = mapped_column(
@@ -42,8 +63,6 @@ class DocumentORM(Base):
     checksum: Mapped[str] = mapped_column(
         String(64),
         nullable=False,
-        unique=True,
-        index=True,
     )
 
     file_type: Mapped[str] = mapped_column(
@@ -52,7 +71,7 @@ class DocumentORM(Base):
     )
 
     imported_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
+        UTCDateTime,
         default=lambda: datetime.now(UTC),
         nullable=False,
     )

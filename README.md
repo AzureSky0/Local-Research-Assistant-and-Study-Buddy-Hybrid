@@ -172,8 +172,11 @@ app/
 └── ui/           # PySide6 windows, pages, widgets
 
 tests/            # mirrors the app/ feature folders
-data/             # local runtime data (database, documents, cache)
 ```
+
+Application data (database, logs, cache) is stored in the per-user app data folder
+(`%LOCALAPPDATA%\LocalResearchAssistant` on Windows). Set the `LRA_DATA_DIR`
+environment variable to use a different folder, for example during development.
 
 Each feature folder follows the same layers:
 

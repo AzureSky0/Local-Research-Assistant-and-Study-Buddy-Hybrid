@@ -1,10 +1,11 @@
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import Boolean, DateTime, String, Text
+from sqlalchemy import Boolean, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base
+from app.database.types import UTCDateTime
 
 
 class WorkspaceORM(Base):
@@ -40,20 +41,20 @@ class WorkspaceORM(Base):
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        UTCDateTime,
         nullable=False,
         default=lambda: datetime.now(UTC),
     )
 
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        UTCDateTime,
         nullable=False,
         default=lambda: datetime.now(UTC),
         onupdate=lambda: datetime.now(UTC),
     )
 
     last_opened_at: Mapped[datetime | None] = mapped_column(
-        DateTime,
+        UTCDateTime,
         nullable=True,
     )
 

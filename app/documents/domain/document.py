@@ -13,6 +13,7 @@ class Document:
     """Business representation of a document."""
 
     id: str
+    workspace_id: str
     file_name: str
     original_path: str
     file_size: int
