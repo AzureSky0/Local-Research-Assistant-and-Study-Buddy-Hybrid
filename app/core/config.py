@@ -1,14 +1,15 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from app.core.constants import APP_NAME, APP_VERSION
 
 
 class Settings(BaseSettings):
-    app_name: str = "Local Research Assistant and Study Buddy Hybrid"
-    app_version: str = "0.1.0"
+    model_config = SettingsConfigDict(env_file=".env")
+
+    app_name: str = APP_NAME
+    app_version: str = APP_VERSION
 
     debug: bool = True
-
-    class Config:
-        env_file = ".env"
 
 
 settings = Settings()

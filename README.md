@@ -163,16 +163,22 @@ Packaging and Microsoft Store release.
 
 ```text
 app/
-├── ui/
-├── services/
-├── models/
-├── database/
-├── rag/
-└── study_tools/
+├── core/         # settings, paths, background task framework
+├── database/     # engine, sessions, Alembic migrations
+├── documents/    # document import and storage
+├── workspace/    # workspace management
+├── knowledge/    # (planned) knowledge base
+├── study/        # (planned) study tools
+└── ui/           # PySide6 windows, pages, widgets
 
-tests/
-docs/
-scripts/
+tests/            # mirrors the app/ feature folders
+data/             # local runtime data (database, documents, cache)
+```
+
+Each feature folder follows the same layers:
+
+```text
+domain/  dto/  mapper/  orm/  repository/  services/
 ```
 
 ---

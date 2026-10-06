@@ -99,7 +99,7 @@ class DocumentImportService:
                     )
                 )
 
-            except (FileNotFoundError, ValueError) as error:
+            except (OSError, ValueError) as error:
                 results.append(
                     DocumentImportResult(
                         file_path=str(file_path),

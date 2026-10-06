@@ -13,8 +13,8 @@ from app.database.engine import engine
 # Alembic can detect schema changes.
 # -------------------------------------------------------------------------
 
-from app.documents.orm import DocumentORM
-from app.workspace.orm import WorkspaceORM
+from app.documents.orm import DocumentORM  # noqa: F401
+from app.workspace.orm import WorkspaceORM  # noqa: F401
 
 # Future imports
 # from app.knowledge.orm.knowledge_pack_orm import KnowledgePackORM

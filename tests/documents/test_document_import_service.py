@@ -214,3 +214,50 @@ def test_import_multiple_documents_continues_after_invalid_file(
         results[2].status
         == DocumentImportStatus.IMPORTED
     )
+
+
+def test_import_multiple_documents_continues_after_unreadable_file(
+    session,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    unreadable_file = tmp_path / "unreadable.pdf"
+    valid_file = tmp_path / "valid.pdf"
+
+    unreadable_file.write_bytes(b"unreadable content")
+    valid_file.write_bytes(b"valid content")
+
+    original_checksum = DocumentImportService._calculate_checksum
+
+    def fake_checksum(file_path: Path) -> str:
+        if file_path == unreadable_file:
+            raise PermissionError(
+                f"Permission denied: {file_path}"
+            )
+
+        return original_checksum(file_path)
+
+    monkeypatch.setattr(
+        DocumentImportService,
+        "_calculate_checksum",
+        staticmethod(fake_checksum),
+    )
+
+    service = create_import_service(session)
+
+    results = service.import_documents(
+        [
+            unreadable_file,
+            valid_file,
+        ]
+    )
+
+    assert (
+        results[0].status
+        == DocumentImportStatus.FAILED
+    )
+
+    assert (
+        results[1].status
+        == DocumentImportStatus.IMPORTED
+    )
