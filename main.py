@@ -10,6 +10,7 @@ from app.core.tasks.async_task_executor import AsyncTaskExecutor
 from app.database.init_db import initialize_database
 from app.ui.managers.activity_manager import ActivityManager
 from app.ui.managers.library_manager import LibraryManager
+from app.ui.managers.processing_manager import ProcessingManager
 from app.ui.managers.workspace_manager import WorkspaceManager
 from app.ui.theme import apply_theme
 from app.ui.windows.main_window import MainWindow
@@ -38,11 +39,18 @@ def main() -> None:
     library = LibraryManager()
     activity = ActivityManager(AsyncTaskExecutor(max_workers=IMPORT_WORKERS))
 
-    # Stop background imports cleanly when the application exits.
-    app.aboutToQuit.connect(activity.shutdown)
+    # Reading documents has its own single worker, separate from imports.
+    processing = ProcessingManager(AsyncTaskExecutor(max_workers=1))
 
-    window = MainWindow(workspaces, library, activity)
+    # Stop background work cleanly when the application exits.
+    app.aboutToQuit.connect(activity.shutdown)
+    app.aboutToQuit.connect(processing.shutdown)
+
+    window = MainWindow(workspaces, library, activity, processing)
     window.show()
+
+    # Resume reading anything left unfinished last time.
+    processing.recover_and_start()
 
     sys.exit(app.exec())
 

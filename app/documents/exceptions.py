@@ -60,3 +60,11 @@ class InvalidDocumentError(DocumentError):
         super().__init__(
             f"{Path(file_path).name} cannot be imported: {reason}"
         )
+
+
+class ExtractionError(DocumentError):
+    """Raised when the text of a document cannot be read.
+
+    The message is shown to users, so it explains the problem in
+    plain language and, where possible, what to do next.
+    """

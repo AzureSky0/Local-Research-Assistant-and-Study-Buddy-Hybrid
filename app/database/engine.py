@@ -32,9 +32,15 @@ def configure_sqlite_connections(engine: Engine) -> None:
             cursor.close()
 
 
+# Imports and background reading write at the same time. With WAL only
+# one write happens at once, so writers wait (up to this many seconds)
+# instead of failing immediately with "database is locked".
+BUSY_TIMEOUT_SECONDS = 30
+
 engine = create_engine(
     DATABASE_URL,
     echo=False,
+    connect_args={"timeout": BUSY_TIMEOUT_SECONDS},
 )
 
 configure_sqlite_connections(engine)

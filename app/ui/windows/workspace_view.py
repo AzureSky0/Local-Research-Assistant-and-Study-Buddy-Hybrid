@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QStackedWidget, QWidget
 
 from app.ui.managers.activity_manager import ActivityManager, ImportActivity
 from app.ui.managers.library_manager import LibraryManager
+from app.ui.managers.processing_manager import ProcessingManager
 from app.ui.managers.workspace_manager import WorkspaceManager
 from app.ui.pages.activity_page import ActivityPage
 from app.ui.pages.library_page import LibraryPage
@@ -25,6 +26,7 @@ class WorkspaceView(QWidget):
         workspaces: WorkspaceManager,
         library: LibraryManager,
         activity: ActivityManager,
+        processing: ProcessingManager,
     ) -> None:
         super().__init__()
         self.setObjectName("page")
@@ -57,6 +59,11 @@ class WorkspaceView(QWidget):
         library.document_added.connect(lambda _: self._refresh_count())
         library.document_removed.connect(lambda _: self._refresh_count())
         activity.document_imported.connect(library.on_document_imported)
+
+        # Reading starts as soon as the first document is imported.
+        activity.document_imported.connect(lambda _: processing.start())
+        processing.document_updated.connect(library.on_document_updated)
+        self.library_page.retry_requested.connect(processing.retry)
         activity.running_count_changed.connect(self._on_running_count_changed)
 
     def show_workspace(self, workspace: Workspace) -> None:

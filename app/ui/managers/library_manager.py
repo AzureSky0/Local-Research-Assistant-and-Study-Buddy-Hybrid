@@ -18,6 +18,7 @@ class LibraryManager(QObject):
     documents_reset = Signal(list)  # list[Document]
     document_added = Signal(object)  # Document
     document_removed = Signal(str)  # document id
+    document_updated = Signal(object)  # Document
 
     def __init__(
         self,
@@ -49,6 +50,11 @@ class LibraryManager(QObject):
         """Show a newly imported document if it belongs to the open workspace."""
         if document.workspace_id == self._workspace_id:
             self.document_added.emit(document)
+
+    def on_document_updated(self, document: Document) -> None:
+        """Refresh a document whose processing status changed."""
+        if document.workspace_id == self._workspace_id:
+            self.document_updated.emit(document)
 
     def remove_document(self, document_id: str) -> bool:
         """Remove a document from the workspace. The original file is untouched."""

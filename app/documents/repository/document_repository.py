@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-from sqlalchemy import func, select
+from collections.abc import Collection
+
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
+from app.documents.domain import DocumentProcessingStage, DocumentProcessingStatus
 from app.documents.orm import DocumentORM
 
 
@@ -76,4 +79,55 @@ class DocumentRepository:
         """Stage removal of a document record."""
         self._session.delete(document)
         self._session.flush()
+
+    def next_pending_id(self, exclude: Collection[str] = ()) -> str | None:
+        """Return the next document waiting to be processed.
+
+        Smaller files go first so they become available sooner
+        (Decision 031).
+        """
+        statement = (
+            select(DocumentORM.id)
+            .where(DocumentORM.processing_status == DocumentProcessingStatus.PENDING)
+            .order_by(DocumentORM.file_size, DocumentORM.imported_at)
+            .limit(1)
+        )
+
+        if exclude:
+            statement = statement.where(DocumentORM.id.not_in(list(exclude)))
+
+        return self._session.scalar(statement)
+
+    def count_with_status(self, status: DocumentProcessingStatus) -> int:
+        statement = select(func.count(DocumentORM.id)).where(
+            DocumentORM.processing_status == status
+        )
+
+        return int(self._session.scalar(statement) or 0)
+
+    def requeue_interrupted(self) -> int:
+        """Mark documents left "processing" by a previous run as pending."""
+        result = self._session.execute(
+            update(DocumentORM)
+            .where(DocumentORM.processing_status == DocumentProcessingStatus.PROCESSING)
+            .values(processing_status=DocumentProcessingStatus.PENDING)
+        )
+
+        return int(result.rowcount or 0)  # type: ignore[attr-defined]
+
+    def requeue_unfinished(self, completed_stages: Collection[DocumentProcessingStage]) -> int:
+        """Mark ready documents that have not completed every stage as pending.
+
+        Happens when a new version adds processing stages.
+        """
+        result = self._session.execute(
+            update(DocumentORM)
+            .where(
+                DocumentORM.processing_status == DocumentProcessingStatus.READY,
+                DocumentORM.processed_stage.not_in(list(completed_stages)),
+            )
+            .values(processing_status=DocumentProcessingStatus.PENDING)
+        )
+
+        return int(result.rowcount or 0)  # type: ignore[attr-defined]
 

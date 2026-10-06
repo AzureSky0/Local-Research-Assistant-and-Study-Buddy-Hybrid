@@ -3,10 +3,10 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import Enum, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Enum, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.documents.domain import DocumentProcessingStatus
+from app.documents.domain import DocumentProcessingStage, DocumentProcessingStatus
 
 from app.database.base import Base
 from app.database.types import UTCDateTime
@@ -80,4 +80,29 @@ class DocumentORM(Base):
         Enum(DocumentProcessingStatus),
         nullable=False,
         default=DocumentProcessingStatus.PENDING,
+    )
+
+    # Last completed processing stage; processing resumes after it.
+    processed_stage: Mapped[DocumentProcessingStage] = mapped_column(
+        Enum(DocumentProcessingStage),
+        nullable=False,
+        default=DocumentProcessingStage.REGISTERED,
+    )
+
+    # User-facing reason when processing failed.
+    processing_error: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    page_count: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
+    # Extractor and normalizer versions used, so text can be reused
+    # for identical files and rebuilt when the extractor changes.
+    extractor_version: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
     )

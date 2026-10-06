@@ -11,6 +11,7 @@ from app.core.tasks.async_task_executor import AsyncTaskExecutor
 from app.documents.dto.document_import_result import DocumentImportStatus
 from app.ui.managers.activity_manager import ActivityManager, ActivityState
 from app.ui.managers.library_manager import LibraryManager
+from app.ui.managers.processing_manager import ProcessingManager
 from app.ui.managers.workspace_manager import WorkspaceManager
 from app.ui.pages.home_page import WorkspaceCard
 from app.ui.windows.main_window import MainWindow
@@ -25,14 +26,16 @@ def window(
     workspaces = WorkspaceManager(session_factory)
     library = LibraryManager(session_factory)
     activity = ActivityManager(AsyncTaskExecutor(max_workers=1), session_factory)
+    processing = ProcessingManager(AsyncTaskExecutor(max_workers=1), session_factory)
 
-    main_window = MainWindow(workspaces, library, activity)
+    main_window = MainWindow(workspaces, library, activity, processing)
     main_window.resize(1280, 800)
     main_window.show()
 
     yield main_window
 
     activity.shutdown()
+    processing.shutdown()
     main_window.close()
     main_window.deleteLater()
 
@@ -149,3 +152,77 @@ def test_cancelling_an_import_keeps_finished_files(
     assert activity.state is ActivityState.CANCELLED
     assert imported < 200
     assert len(window.workspace_view.library_page._model.documents) == imported
+
+
+def test_imported_documents_are_read_and_become_ready(
+    window: MainWindow,
+    tmp_path: Path,
+) -> None:
+    import pymupdf
+
+    from app.documents.domain import DocumentProcessingStatus
+
+    folder = tmp_path / "papers"
+    folder.mkdir()
+    for name in ("attention.pdf", "adam.pdf"):
+        document = pymupdf.open()
+        document.new_page().insert_text((72, 72), f"Text of {name}")
+        document.save(folder / name)
+        document.close()
+    (folder / "notes.md").write_text("# Gradient descent", encoding="utf-8")
+
+    workspace = window._workspaces.create_workspace("Machine Learning", None, "blue")
+    window._workspaces.open_workspace(workspace.id)
+    window.workspace_view._import_folder(folder)
+
+    model = window.workspace_view.library_page._model
+
+    wait_until(
+        lambda: len(model.documents) == 3
+        and all(d.processing_status is DocumentProcessingStatus.READY for d in model.documents)
+    )
+
+    assert all(d.page_count == 1 for d in model.documents)
+
+
+def test_scanned_pdf_shows_reason_and_can_be_retried(
+    window: MainWindow,
+    tmp_path: Path,
+) -> None:
+    import pymupdf
+
+    from app.documents.domain import DocumentProcessingStatus
+
+    path = tmp_path / "scan.pdf"
+    document = pymupdf.open()
+    document.new_page()  # a page without any text layer
+    document.save(path)
+    document.close()
+
+    workspace = window._workspaces.create_workspace("Scans", None, "blue")
+    window._workspaces.open_workspace(workspace.id)
+    window.workspace_view._import_files([path])
+
+    page = window.workspace_view.library_page
+    wait_until(
+        lambda: len(page._model.documents) == 1
+        and page._model.documents[0].processing_status is DocumentProcessingStatus.FAILED
+    )
+
+    page._table.selectRow(0)
+    wait_until(lambda: page._details.isVisible())
+    assert page._details._problem.isVisibleTo(page._details)
+    assert "OCR" in page._details._problem_text.text()
+
+    # The user adds text (for example after running OCR elsewhere) and retries.
+    document = pymupdf.open()
+    document.new_page().insert_text((72, 72), "Now with text")
+    document.save(path)
+    document.close()
+
+    page._details.retry_requested.emit(page._model.documents[0])
+
+    wait_until(
+        lambda: page._model.documents[0].processing_status is DocumentProcessingStatus.READY
+    )
+    assert not page._details._problem.isVisibleTo(page._details)

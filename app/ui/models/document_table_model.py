@@ -53,6 +53,16 @@ class DocumentTableModel(QAbstractTableModel):
         self._documents.append(document)
         self.endInsertRows()
 
+    def update_document(self, document: Document) -> None:
+        for row, existing in enumerate(self._documents):
+            if existing.id == document.id:
+                self._documents[row] = document
+                self.dataChanged.emit(
+                    self.index(row, 0),
+                    self.index(row, self.columnCount() - 1),
+                )
+                return
+
     def remove_document(self, document_id: str) -> None:
         for row, document in enumerate(self._documents):
             if document.id == document_id:

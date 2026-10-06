@@ -7,6 +7,7 @@ from app.documents.dto.document_import_result import DocumentImportStatus
 from app.ui.formatting import plural
 from app.ui.managers.activity_manager import ActivityManager, ActivityState, ImportActivity
 from app.ui.managers.library_manager import LibraryManager
+from app.ui.managers.processing_manager import ProcessingManager
 from app.ui.managers.workspace_manager import WorkspaceManager
 from app.ui.pages.home_page import HomePage
 from app.ui.pages.settings_page import SettingsPage
@@ -24,6 +25,7 @@ class MainWindow(QMainWindow):
         workspaces: WorkspaceManager,
         library: LibraryManager,
         activity: ActivityManager,
+        processing: ProcessingManager,
     ) -> None:
         super().__init__()
         self._workspaces = workspaces
@@ -34,7 +36,7 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(960, 640)
 
         self.home_page = HomePage(workspaces)
-        self.workspace_view = WorkspaceView(workspaces, library, activity)
+        self.workspace_view = WorkspaceView(workspaces, library, activity, processing)
         self.settings_page = SettingsPage()
 
         self._stack = QStackedWidget()

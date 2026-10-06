@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from app.documents.domain import Document
+from app.documents.domain import Document, DocumentProcessingStatus
 from app.documents.supported_formats import SUPPORTED_EXTENSIONS
 from app.ui.formatting import plural
 from app.ui.managers.library_manager import LibraryManager
@@ -54,6 +54,7 @@ class LibraryPage(QWidget):
     import_files_requested = Signal(list)  # list[Path]
     import_folder_requested = Signal(object)  # Path
     activity_requested = Signal()
+    retry_requested = Signal(str)  # document id
 
     def __init__(self, library: LibraryManager) -> None:
         super().__init__()
@@ -137,6 +138,7 @@ class LibraryPage(QWidget):
         self._details = DocumentDetailsPanel()
         self._details.hide()
         self._details.remove_requested.connect(self._confirm_remove)
+        self._details.retry_requested.connect(self._on_retry)
 
         # Assemble ----------------------------------------------------------------
         self._empty = EmptyLibraryWidget()
@@ -181,6 +183,7 @@ class LibraryPage(QWidget):
         library.document_added.connect(self._model.add_document)
         library.document_added.connect(lambda _: self._update_summary())
         library.document_removed.connect(self._on_document_removed)
+        library.document_updated.connect(self._on_document_updated)
 
         self._update_summary()
 
@@ -241,6 +244,19 @@ class LibraryPage(QWidget):
         self._model.set_documents(documents)
         self._details.show_document(None)
 
+    def _on_retry(self, document: Document | None) -> None:
+        if document is not None:
+            self.retry_requested.emit(document.id)
+
+    def _on_document_updated(self, document: Document) -> None:
+        self._model.update_document(document)
+
+        shown = self._details.document
+        if shown is not None and shown.id == document.id:
+            self._details.show_document(document)
+
+        self._update_summary()
+
     def _on_document_removed(self, document_id: str) -> None:
         self._model.remove_document(document_id)
         self._details.show_document(None)
@@ -264,7 +280,17 @@ class LibraryPage(QWidget):
 
         self._content.setCurrentIndex(0 if total == 0 and self._running_imports == 0 else 1)
 
-        self._summary.setText(plural(total, "document") if total else "No documents yet")
+        reading = sum(
+            1
+            for document in documents
+            if document.processing_status
+            in (DocumentProcessingStatus.PENDING, DocumentProcessingStatus.PROCESSING)
+        )
+
+        summary = plural(total, "document") if total else "No documents yet"
+        if reading:
+            summary += f" · {reading} being read"
+        self._summary.setText(summary)
         self._activity_link.setVisible(self._running_imports > 0)
         self._activity_link.setText(
             f"· {plural(self._running_imports, 'import')} running in the background"
