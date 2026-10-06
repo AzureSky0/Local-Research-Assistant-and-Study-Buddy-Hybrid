@@ -17,7 +17,15 @@ from app.documents.dto.document_import_result import (
     DocumentImportResult,
     DocumentImportStatus,
 )
-from app.documents.exceptions import DocumentAlreadyImportedError
+from app.documents.exceptions import (
+    DocumentAlreadyImportedError,
+    InvalidDocumentError,
+    UnsupportedDocumentTypeError,
+)
+from app.documents.services.document_file_discovery_service import (
+    DocumentFileDiscoveryService,
+)
+from app.documents.services.document_file_validator import DocumentFileValidator
 from app.documents.services.document_service import DocumentService
 
 logger = logging.getLogger(__name__)
@@ -29,8 +37,12 @@ class DocumentImportService:
     def __init__(
         self,
         document_service: DocumentService,
+        validator: DocumentFileValidator | None = None,
+        discovery_service: DocumentFileDiscoveryService | None = None,
     ) -> None:
         self._document_service = document_service
+        self._validator = validator or DocumentFileValidator()
+        self._discovery_service = discovery_service or DocumentFileDiscoveryService()
 
     def import_document(
         self,
@@ -39,7 +51,7 @@ class DocumentImportService:
     ) -> Document:
         """Import a single file into a workspace and create its document record."""
 
-        self._validate_file(file_path)
+        file_type = self._validator.validate(file_path)
 
         checksum = self._calculate_checksum(file_path)
 
@@ -61,7 +73,7 @@ class DocumentImportService:
             original_path=str(file_path),
             file_size=file_path.stat().st_size,
             checksum=checksum,
-            file_type=file_path.suffix.lower().lstrip("."),
+            file_type=file_type,
             imported_at=datetime.now(UTC),
             processing_status=DocumentProcessingStatus.PENDING,
         )
@@ -108,7 +120,18 @@ class DocumentImportService:
                     )
                 )
 
-            except (OSError, ValueError) as error:
+            except UnsupportedDocumentTypeError as error:
+                logger.info("Skipped unsupported file %s", file_path)
+
+                results.append(
+                    DocumentImportResult(
+                        file_path=str(file_path),
+                        status=DocumentImportStatus.UNSUPPORTED,
+                        error=str(error),
+                    )
+                )
+
+            except (InvalidDocumentError, OSError, ValueError) as error:
                 logger.warning("Failed to import %s: %s", file_path, error)
 
                 results.append(
@@ -132,19 +155,49 @@ class DocumentImportService:
 
         return results
 
-    @staticmethod
-    def _validate_file(file_path: Path) -> None:
-        """Validate that the import source is a file."""
+    def import_folder(
+        self,
+        workspace_id: str,
+        folder: Path,
+        recursive: bool = True,
+    ) -> list[DocumentImportResult]:
+        """
+        Import every supported document found in a folder.
 
-        if not file_path.exists():
-            raise FileNotFoundError(
-                f"Document does not exist: {file_path}"
-            )
+        Unsupported files are reported as unsupported, and folders
+        that cannot be read are reported as failed. Neither stops
+        the rest of the import.
+        """
 
-        if not file_path.is_file():
-            raise ValueError(
-                f"Document path is not a file: {file_path}"
+        discovery = self._discovery_service.discover(
+            folder,
+            recursive=recursive,
+        )
+
+        results = self.import_documents(
+            workspace_id,
+            discovery.supported_files,
+        )
+
+        results.extend(
+            DocumentImportResult(
+                file_path=str(file_path),
+                status=DocumentImportStatus.UNSUPPORTED,
+                error=str(UnsupportedDocumentTypeError(str(file_path))),
             )
+            for file_path in discovery.unsupported_files
+        )
+
+        results.extend(
+            DocumentImportResult(
+                file_path=str(path),
+                status=DocumentImportStatus.FAILED,
+                error=f"Folder could not be read: {path}",
+            )
+            for path in discovery.inaccessible_paths
+        )
+
+        return results
 
     @staticmethod
     def _calculate_checksum(

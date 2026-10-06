@@ -5,7 +5,10 @@ from pathlib import Path
 
 import pytest
 
-from app.documents.exceptions import DocumentAlreadyImportedError
+from app.documents.exceptions import (
+    DocumentAlreadyImportedError,
+    UnsupportedDocumentTypeError,
+)
 from app.documents.services.document_import_service import (
     DocumentImportService,
 )
@@ -15,6 +18,9 @@ from app.documents.dto.document_import_result import (
 from app.documents.services.document_service import DocumentService
 from app.workspace.dto.workspace_create import WorkspaceCreateDTO
 from app.workspace.services.workspace_service import WorkspaceService
+
+# Minimal PDF header so test files pass content validation.
+PDF_HEADER = b"%PDF-1.4\n"
 
 
 def create_import_service(
@@ -31,7 +37,7 @@ def test_import_document(
     tmp_path: Path,
 ) -> None:
     file_path = tmp_path / "example.pdf"
-    content = b"Example PDF content"
+    content = PDF_HEADER + b"Example PDF content"
 
     file_path.write_bytes(content)
 
@@ -57,7 +63,7 @@ def test_import_same_file_raises_duplicate_error(
     tmp_path: Path,
 ) -> None:
     file_path = tmp_path / "example.pdf"
-    file_path.write_bytes(b"Example PDF content")
+    file_path.write_bytes(PDF_HEADER + b"Example PDF content")
 
     service = create_import_service(session)
 
@@ -82,7 +88,7 @@ def test_import_identical_content_from_different_path_raises_duplicate_error(
     first_file = tmp_path / "first.pdf"
     second_file = tmp_path / "second.pdf"
 
-    content = b"Identical document content"
+    content = PDF_HEADER + b"Identical document content"
 
     first_file.write_bytes(content)
     second_file.write_bytes(content)
@@ -130,7 +136,7 @@ def test_import_does_not_copy_or_move_file(
     tmp_path: Path,
 ) -> None:
     file_path = tmp_path / "example.pdf"
-    file_path.write_bytes(b"Example PDF content")
+    file_path.write_bytes(PDF_HEADER + b"Example PDF content")
 
     service = create_import_service(session)
 
@@ -148,9 +154,9 @@ def test_import_multiple_documents_continues_after_duplicate(
     duplicate_file = tmp_path / "duplicate.pdf"
     third_file = tmp_path / "third.pdf"
 
-    first_file.write_bytes(b"same content")
-    duplicate_file.write_bytes(b"same content")
-    third_file.write_bytes(b"different content")
+    first_file.write_bytes(PDF_HEADER + b"same content")
+    duplicate_file.write_bytes(PDF_HEADER + b"same content")
+    third_file.write_bytes(PDF_HEADER + b"different content")
 
     service = create_import_service(session)
 
@@ -190,8 +196,8 @@ def test_import_multiple_documents_continues_after_invalid_file(
     missing_file = tmp_path / "missing.pdf"
     another_valid_file = tmp_path / "another.pdf"
 
-    valid_file.write_bytes(b"valid content")
-    another_valid_file.write_bytes(b"another valid content")
+    valid_file.write_bytes(PDF_HEADER + b"valid content")
+    another_valid_file.write_bytes(PDF_HEADER + b"another valid content")
 
     service = create_import_service(session)
 
@@ -231,8 +237,8 @@ def test_import_multiple_documents_continues_after_unreadable_file(
     unreadable_file = tmp_path / "unreadable.pdf"
     valid_file = tmp_path / "valid.pdf"
 
-    unreadable_file.write_bytes(b"unreadable content")
-    valid_file.write_bytes(b"valid content")
+    unreadable_file.write_bytes(PDF_HEADER + b"unreadable content")
+    valid_file.write_bytes(PDF_HEADER + b"valid content")
 
     original_checksum = DocumentImportService._calculate_checksum
 
@@ -277,7 +283,7 @@ def test_same_file_can_be_imported_into_different_workspaces(
     tmp_path: Path,
 ) -> None:
     file_path = tmp_path / "shared.pdf"
-    file_path.write_bytes(b"Shared textbook content")
+    file_path.write_bytes(PDF_HEADER + b"Shared textbook content")
 
     other_workspace = WorkspaceService(session).create_workspace(
         WorkspaceCreateDTO(name="Other Workspace")
@@ -292,4 +298,120 @@ def test_same_file_can_be_imported_into_different_workspaces(
     assert first.id != second.id
     assert first.workspace_id == workspace_id
     assert second.workspace_id == other_workspace.id
+
+
+def test_import_unsupported_format_raises_error(
+    session,
+    workspace_id: str,
+    tmp_path: Path,
+) -> None:
+    file_path = tmp_path / "notes.docx"
+    file_path.write_bytes(b"PK fake docx")
+
+    service = create_import_service(session)
+
+    with pytest.raises(UnsupportedDocumentTypeError) as exc_info:
+        service.import_document(workspace_id, file_path)
+
+    assert ".docx" in str(exc_info.value)
+    assert "PDF" in str(exc_info.value)
+
+
+def test_import_detects_file_type_case_insensitively(
+    session,
+    workspace_id: str,
+    tmp_path: Path,
+) -> None:
+    pdf_file = tmp_path / "SCAN.PDF"
+    markdown_file = tmp_path / "notes.markdown"
+
+    pdf_file.write_bytes(PDF_HEADER + b"content")
+    markdown_file.write_text("# Notes", encoding="utf-8")
+
+    service = create_import_service(session)
+
+    assert service.import_document(workspace_id, pdf_file).file_type == "pdf"
+    assert service.import_document(workspace_id, markdown_file).file_type == "md"
+
+
+def test_import_multiple_documents_reports_unsupported_and_invalid_files(
+    session,
+    workspace_id: str,
+    tmp_path: Path,
+) -> None:
+    valid_file = tmp_path / "valid.txt"
+    unsupported_file = tmp_path / "slides.pptx"
+    fake_pdf = tmp_path / "fake.pdf"
+
+    valid_file.write_text("Plain text notes", encoding="utf-8")
+    unsupported_file.write_bytes(b"PK fake pptx")
+    fake_pdf.write_text("Not really a PDF", encoding="utf-8")
+
+    service = create_import_service(session)
+
+    results = service.import_documents(
+        workspace_id,
+        [
+            valid_file,
+            unsupported_file,
+            fake_pdf,
+        ],
+    )
+
+    assert [result.status for result in results] == [
+        DocumentImportStatus.IMPORTED,
+        DocumentImportStatus.UNSUPPORTED,
+        DocumentImportStatus.FAILED,
+    ]
+    assert results[2].error is not None
+    assert "not a valid PDF" in results[2].error
+
+
+def test_import_folder(
+    session,
+    workspace_id: str,
+    tmp_path: Path,
+) -> None:
+    folder = tmp_path / "course"
+    chapters = folder / "chapters"
+    chapters.mkdir(parents=True)
+
+    (folder / "syllabus.pdf").write_bytes(PDF_HEADER + b"syllabus")
+    (chapters / "chapter1.md").write_text("# Chapter 1", encoding="utf-8")
+    (folder / "slides.pptx").write_bytes(b"PK fake pptx")
+    (folder / ".hidden.txt").write_text("hidden", encoding="utf-8")
+
+    service = create_import_service(session)
+
+    results = service.import_folder(workspace_id, folder)
+
+    statuses = {
+        Path(result.file_path).name: result.status
+        for result in results
+    }
+
+    assert statuses == {
+        "chapter1.md": DocumentImportStatus.IMPORTED,
+        "syllabus.pdf": DocumentImportStatus.IMPORTED,
+        "slides.pptx": DocumentImportStatus.UNSUPPORTED,
+    }
+
+
+def test_import_folder_twice_reports_duplicates(
+    session,
+    workspace_id: str,
+    tmp_path: Path,
+) -> None:
+    folder = tmp_path / "papers"
+    folder.mkdir()
+    (folder / "paper.pdf").write_bytes(PDF_HEADER + b"paper")
+
+    service = create_import_service(session)
+
+    service.import_folder(workspace_id, folder)
+    results = service.import_folder(workspace_id, folder)
+
+    assert [result.status for result in results] == [
+        DocumentImportStatus.ALREADY_IMPORTED,
+    ]
 

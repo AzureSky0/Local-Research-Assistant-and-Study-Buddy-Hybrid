@@ -11,6 +11,7 @@ class DocumentImportStatus(str, Enum):
 
     IMPORTED = "imported"
     ALREADY_IMPORTED = "already_imported"
+    UNSUPPORTED = "unsupported"
     FAILED = "failed"
 
 
