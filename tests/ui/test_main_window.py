@@ -270,3 +270,50 @@ def test_search_finds_text_inside_documents(
 
     page._search.input.clear()
     wait_until(lambda: page._browse.currentIndex() == 0)
+
+
+def test_double_clicking_a_result_opens_it_at_that_page(
+    window: MainWindow,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import pymupdf
+
+    from app.documents.domain import DocumentProcessingStatus
+    from app.ui.document_opener import OpenResult
+    from app.ui.pages import library_page as library_page_module
+
+    opened: list[tuple[Path, int | None]] = []
+
+    def fake_open(path: Path, page: int | None = None) -> OpenResult:
+        opened.append((path, page))
+        return OpenResult(opened=True, at_page=True)
+
+    monkeypatch.setattr(library_page_module, "open_document", fake_open)
+
+    path = tmp_path / "book.pdf"
+    document = pymupdf.open()
+    for text in ["Contents", "Preface", "Backpropagation explained"]:
+        document.new_page().insert_text((72, 72), text)
+    document.save(path)
+    document.close()
+
+    workspace = window._workspaces.create_workspace("Books", None, "blue")
+    window._workspaces.open_workspace(workspace.id)
+    window.workspace_view._import_files([path])
+
+    page = window.workspace_view.library_page
+    wait_until(
+        lambda: len(page._model.documents) == 1
+        and page._model.documents[0].processing_status is DocumentProcessingStatus.READY
+    )
+
+    page._search.input.setText("backpropagation")
+    wait_until(lambda: page._browse.currentIndex() == 1)
+
+    results = page._results
+    passage_row = results.row_count - 1
+    results._list.activated.emit(results._model.index(passage_row, 0))
+
+    assert opened == [(path, 3)]
+    assert page._details._open.text() == "Open at page 3"

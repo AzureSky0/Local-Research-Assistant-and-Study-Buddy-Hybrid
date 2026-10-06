@@ -18,6 +18,7 @@ class DocumentDetailsPanel(QFrame):
 
     remove_requested = Signal(object)  # Document
     retry_requested = Signal(object)  # Document
+    open_requested = Signal(object, object)  # Document, page (int | None)
 
     def __init__(self) -> None:
         super().__init__()
@@ -25,6 +26,7 @@ class DocumentDetailsPanel(QFrame):
         self.setFixedWidth(320)
 
         self._document: Document | None = None
+        self._page: int | None = None
 
         self._badge_holder = QVBoxLayout()
         self._badge_holder.setContentsMargins(0, 0, 0, 0)
@@ -70,6 +72,11 @@ class DocumentDetailsPanel(QFrame):
         self._location = label("", "mono", wrap=True)
         self._location.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
 
+        self._open = button("Open", "primary", "file", "#FFFFFF")
+        self._open.clicked.connect(
+            lambda: self.open_requested.emit(self._document, self._page)
+        )
+
         reveal = button("Show in folder", None, "folder", t.INK, size="small")
         reveal.clicked.connect(self._reveal)
 
@@ -87,6 +94,7 @@ class DocumentDetailsPanel(QFrame):
         layout.addLayout(self._badge_holder)
         layout.addWidget(self._name)
         layout.addWidget(self._status, 0, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self._open, 0, Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self._problem)
         layout.addLayout(facts)
         layout.addLayout(vbox(label("Location", "small"), self._location, spacing=6))
@@ -100,8 +108,10 @@ class DocumentDetailsPanel(QFrame):
     def document(self) -> Document | None:
         return self._document if self.isVisible() else None
 
-    def show_document(self, document: Document | None) -> None:
+    def show_document(self, document: Document | None, page: int | None = None) -> None:
+        """Show a document; `page` comes from a search result, if any."""
         self._document = document
+        self._page = page
         self.setVisible(document is not None)
 
         if document is None:
@@ -112,6 +122,7 @@ class DocumentDetailsPanel(QFrame):
         self._badge_holder.addWidget(type_badge(document.file_type), 0, Qt.AlignmentFlag.AlignLeft)
 
         self._name.setText(document.file_name)
+        self._open.setText(f"Open at page {page}" if page and page > 1 else "Open")
         self._status.set_status(document.processing_status)
         self._size.setText(format_size(document.file_size))
         self._pages.setText(str(document.page_count) if document.page_count else "—")

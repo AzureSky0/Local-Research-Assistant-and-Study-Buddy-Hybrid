@@ -50,6 +50,11 @@ class MainWindow(QMainWindow):
 
         self.home_page.settings_requested.connect(self._show_settings)
         self.workspace_view.settings_requested.connect(self._show_settings)
+        self.workspace_view.notification.connect(
+            lambda message: self.toast.show_message(
+                message, icon_name="file", icon_color=t.TOAST_LINK
+            )
+        )
         self.settings_page.back_requested.connect(self._show_current)
         workspaces.current_workspace_changed.connect(self._on_workspace_changed)
         activity.activity_finished.connect(self._on_import_finished)

@@ -230,7 +230,8 @@ class SearchResultsDelegate(QStyledItemDelegate):
 class SearchResultsView(QWidget):
     """Shows what a search found; selecting a row selects that document."""
 
-    document_selected = Signal(str)  # document id
+    document_selected = Signal(str, object)  # document id, page (int | None)
+    open_requested = Signal(str, object)  # document id, page (int | None)
 
     def __init__(self) -> None:
         super().__init__()
@@ -253,7 +254,9 @@ class SearchResultsView(QWidget):
             f"QListView {{ background: {t.SURFACE}; border: 1px solid {t.BORDER}; border-radius: 12px; }}"
         )
         self._list.setAccessibleName("Search results")
-        self._list.clicked.connect(self._on_activated)
+        self._list.setToolTip("Double-click or press Enter to open at this page")
+        self._list.clicked.connect(self._on_clicked)
+        # Double-click or Enter.
         self._list.activated.connect(self._on_activated)
 
         layout = QVBoxLayout(self)
@@ -352,8 +355,15 @@ class SearchResultsView(QWidget):
         item.setEditable(False)
         self._model.appendRow(item)
 
+    def _on_clicked(self, index: QModelIndex) -> None:
+        document_id = index.data(DOCUMENT_ID_ROLE)
+
+        if document_id:
+            self.document_selected.emit(document_id, index.data(PAGE_ROLE))
+
     def _on_activated(self, index: QModelIndex) -> None:
         document_id = index.data(DOCUMENT_ID_ROLE)
 
         if document_id:
-            self.document_selected.emit(document_id)
+            self.document_selected.emit(document_id, index.data(PAGE_ROLE))
+            self.open_requested.emit(document_id, index.data(PAGE_ROLE))

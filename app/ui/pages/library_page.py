@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 
 from app.documents.domain import Document, DocumentProcessingStatus
 from app.documents.supported_formats import SUPPORTED_EXTENSIONS
+from app.ui.document_opener import open_document
 from app.ui.formatting import plural
 from app.ui.managers.library_manager import LibraryManager
 from app.ui.models.document_table_delegate import DocumentTableDelegate
@@ -58,6 +59,7 @@ class LibraryPage(QWidget):
     import_folder_requested = Signal(object)  # Path
     activity_requested = Signal()
     retry_requested = Signal(str)  # document id
+    notification = Signal(str)  # message for the user
 
     def __init__(self, library: LibraryManager) -> None:
         super().__init__()
@@ -95,6 +97,7 @@ class LibraryPage(QWidget):
 
         self._results = SearchResultsView()
         self._results.document_selected.connect(self._show_document_by_id)
+        self._results.open_requested.connect(self._open_document_by_id)
 
         self._filter_group = QButtonGroup(self)
         self._filter_group.setExclusive(True)
@@ -151,6 +154,7 @@ class LibraryPage(QWidget):
         self._details.hide()
         self._details.remove_requested.connect(self._confirm_remove)
         self._details.retry_requested.connect(self._on_retry)
+        self._details.open_requested.connect(self._open_document)
 
         # Assemble ----------------------------------------------------------------
         self._empty = EmptyLibraryWidget()
@@ -196,6 +200,9 @@ class LibraryPage(QWidget):
         self._search.input.textChanged.connect(self._on_search_text_changed)
         self._filter_group.buttonClicked.connect(self._on_filter_changed)
         self._table.selectionModel().selectionChanged.connect(self._on_selection_changed)
+        self._table.doubleClicked.connect(
+            lambda index: self._open_document(index.data(DOCUMENT_ROLE), None)
+        )
         self._proxy.rowsInserted.connect(self._update_summary)
         self._proxy.modelReset.connect(self._update_summary)
         self._proxy.rowsRemoved.connect(self._update_summary)
@@ -321,11 +328,26 @@ class LibraryPage(QWidget):
         self._results.show_results(results, reading)
         self._browse.setCurrentIndex(1)
 
-    def _show_document_by_id(self, document_id: str) -> None:
-        for document in self._model.documents:
-            if document.id == document_id:
-                self._details.show_document(document)
-                return
+    def _find_document(self, document_id: str) -> Document | None:
+        return next((d for d in self._model.documents if d.id == document_id), None)
+
+    def _show_document_by_id(self, document_id: str, page: int | None = None) -> None:
+        document = self._find_document(document_id)
+
+        if document is not None:
+            self._details.show_document(document, page)
+
+    def _open_document_by_id(self, document_id: str, page: int | None = None) -> None:
+        self._open_document(self._find_document(document_id), page)
+
+    def _open_document(self, document: Document | None, page: int | None) -> None:
+        if document is None:
+            return
+
+        result = open_document(Path(document.original_path), page)
+
+        if result.message:
+            self.notification.emit(result.message)
 
     def _on_selection_changed(self, selected: QItemSelection, deselected: QItemSelection) -> None:
         indexes = self._table.selectionModel().selectedRows()

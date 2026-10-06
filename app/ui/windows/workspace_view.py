@@ -20,6 +20,7 @@ class WorkspaceView(QWidget):
     """Everything inside an open workspace: sidebar, Library and Activity."""
 
     settings_requested = Signal()
+    notification = Signal(str)
 
     def __init__(
         self,
@@ -64,6 +65,7 @@ class WorkspaceView(QWidget):
         activity.document_imported.connect(lambda _: processing.start())
         processing.document_updated.connect(library.on_document_updated)
         self.library_page.retry_requested.connect(processing.retry)
+        self.library_page.notification.connect(self.notification)
         activity.running_count_changed.connect(self._on_running_count_changed)
 
     def show_workspace(self, workspace: Workspace) -> None:
