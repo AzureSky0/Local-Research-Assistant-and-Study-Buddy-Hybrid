@@ -15,6 +15,7 @@ from PySide6.QtWidgets import QApplication  # noqa: E402
 
 import app.documents.orm  # noqa: E402, F401
 import app.workspace.orm  # noqa: E402, F401
+import app.knowledge.orm  # noqa: E402, F401
 import app.knowledge.orm.keyword_index_schema  # noqa: E402, F401
 from app.database.base import Base  # noqa: E402
 from app.database.engine import configure_sqlite_connections  # noqa: E402

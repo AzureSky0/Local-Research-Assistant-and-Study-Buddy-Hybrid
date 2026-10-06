@@ -66,7 +66,7 @@ def test_pdf_is_extracted_and_ready(session: Session, workspace_id: str, tmp_pat
 
     assert result is not None
     assert result.processing_status is DocumentProcessingStatus.READY
-    assert result.processed_stage is DocumentProcessingStage.KEYWORD_INDEXED
+    assert result.processed_stage is DocumentProcessingStage.CHUNKED
     assert result.page_count == 2
     assert result.extractor_version is not None
     texts = page_texts(session, document.id)
@@ -252,3 +252,22 @@ def test_task_processes_every_pending_document(session: Session, workspace_id: s
 
     assert processed == 3
     assert all(d.processing_status is DocumentProcessingStatus.READY for d in finished)
+
+
+def test_ready_document_has_chunks_with_page_ranges(
+    session: Session, workspace_id: str, tmp_path: Path
+) -> None:
+    from app.knowledge.repository.chunk_repository import ChunkRepository
+
+    text = " ".join(f"Sentence {i} explains gradient descent." for i in range(60))
+    path = make_pdf(tmp_path / "long.pdf", [text[:900], text[900:1800], text[1800:]])
+    document = add_document(session, workspace_id, path, "pdf")
+
+    DocumentProcessingService(session).process(document.id)
+
+    chunks = ChunkRepository(session).list_for_document(document.id)
+    assert chunks
+    assert chunks[0].start_page == 1
+    assert chunks[-1].end_page == 3
+    assert all(chunk.chunker_version for chunk in chunks)
+

@@ -16,6 +16,7 @@ from app.database.engine import engine
 
 from app.documents.orm import DocumentORM  # noqa: F401
 from app.workspace.orm import WorkspaceORM  # noqa: F401
+from app.knowledge.orm import ChunkORM  # noqa: F401
 from app.knowledge.orm.keyword_index_schema import is_keyword_index_table
 
 # Future imports

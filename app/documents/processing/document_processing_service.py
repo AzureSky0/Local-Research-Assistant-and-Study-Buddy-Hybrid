@@ -15,6 +15,7 @@ from app.documents.domain.document_processing_stage import stage_index
 from app.documents.exceptions import ExtractionError
 from app.documents.extraction.extractor_registry import default_extractor_registry
 from app.documents.mapper.document_mapper import DocumentMapper
+from app.documents.processing.chunk_stage import ChunkStage
 from app.documents.processing.extract_text_stage import ExtractTextStage
 from app.documents.processing.keyword_index_stage import KeywordIndexStage
 from app.documents.processing.processing_stage import (
@@ -40,6 +41,7 @@ def default_stages() -> list[ProcessingStage]:
     return [
         ExtractTextStage(default_extractor_registry()),
         KeywordIndexStage(),
+        ChunkStage(),
     ]
 
 
