@@ -385,8 +385,8 @@ def test_search_by_meaning_after_documents_are_embedded(
     wait_until(lambda: embedding.progress(workspace.id) == (2, 2) and not embedding.is_running)
     wait_until(lambda: embedding.query_embedder() is not None)
 
-    # No shared words with the note: only search by meaning can find it.
-    page._search.input.setText("which optimiser works")
+    # "optimiser" is not in the note; meaning connects it to Adam.
+    page._search.input.setText("optimiser averages")
     wait_until(lambda: page._browse.currentIndex() == 1)
 
     assert "by words and meaning" in page._results._summary.text()

@@ -7,10 +7,10 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass, replace
 
-from sqlalchemy import select
+from sqlalchemy import select, tuple_
 from sqlalchemy.orm import Session
 
-from app.documents.orm import DocumentORM
+from app.documents.orm import DocumentORM, DocumentPageORM
 from app.knowledge.dto.search_results import (
     HIGHLIGHT_END,
     HIGHLIGHT_START,
@@ -21,6 +21,7 @@ from app.knowledge.embeddings.embedder import Embedder, EmbeddingModelUnavailabl
 from app.knowledge.orm.chunk_orm import ChunkORM
 from app.knowledge.orm.vector_index_schema import existing_vector_tables, vector_table_name
 from app.knowledge.repository.vector_repository import VectorRepository
+from app.knowledge.services.evidence import is_evidence, query_terms
 from app.knowledge.services.keyword_search_service import (
     MAX_PASSAGES,
     PASSAGES_PER_DOCUMENT,
@@ -74,6 +75,12 @@ class HybridSearchService:
 
     def search(self, workspace_id: str, text: str, limit: int = MAX_PASSAGES) -> SearchResults:
         results = self._keyword.search(workspace_id, text, limit)
+        terms = query_terms(results.query)
+
+        # Pages that share only one or two words with a long search are
+        # not evidence of anything (random text matches them too).
+        if results.match_mode == "any" and results.passages:
+            self._keep_evidence_pages(results, terms)
 
         if self._embedder is None or results.too_common or not results.query:
             return results
@@ -98,14 +105,50 @@ class HybridSearchService:
             for match in vectors.nearest(workspace_id, query_vector, MEANING_CANDIDATES)
             if match.distance < MAX_MEANING_DISTANCE
         ]
-        meaning_passages = self._passages_for_chunks([m.chunk_id for m in matches], results.query)
+        meaning_chunks = self._passages_for_chunks([m.chunk_id for m in matches], results.query)
+
+        # Nearest neighbours exist for any text, so a passage found only by
+        # meaning is shown only from a document whose own words support the
+        # search, or when the passage itself contains enough of them.
+        supported = {passage.document_id for passage in results.passages}
+        meaning_passages = [
+            passage
+            for passage, chunk_text in meaning_chunks
+            if passage.document_id in supported or is_evidence(chunk_text, terms)
+        ]
 
         results.passages = _fuse(results.passages, meaning_passages, limit)
         results.used_meaning = True
         return results
 
-    def _passages_for_chunks(self, chunk_ids: list[str], query: str) -> list[PassageMatch]:
-        """Turn chunks (in meaning order) into passages with an excerpt."""
+    def _keep_evidence_pages(self, results: SearchResults, terms: set[str]) -> None:
+        pages = {(p.document_id, p.page_number) for p in results.passages}
+        rows = self._session.execute(
+            select(DocumentPageORM.document_id, DocumentPageORM.page_number, DocumentPageORM.text).where(
+                tuple_(DocumentPageORM.document_id, DocumentPageORM.page_number).in_(pages)
+            )
+        ).all()
+        texts = {(document_id, page_number): page_text for document_id, page_number, page_text in rows}
+
+        kept = [
+            passage
+            for passage in results.passages
+            if is_evidence(texts.get((passage.document_id, passage.page_number), ""), terms)
+        ]
+        if len(kept) == len(results.passages):
+            return
+
+        # The totals counted every page with any word; the kept pages are
+        # the ones worth counting.
+        results.passages = kept
+        results.total_passages = len(kept)
+        results.total_documents = len({passage.document_id for passage in kept})
+        results.widened = results.widened and bool(kept)
+
+    def _passages_for_chunks(
+        self, chunk_ids: list[str], query: str
+    ) -> list[tuple[PassageMatch, str]]:
+        """Turn chunks (in meaning order) into passages with an excerpt, plus the chunk text."""
 
         if not chunk_ids:
             return []
@@ -138,7 +181,7 @@ class HybridSearchService:
             if _word_share(chunk_text) < MIN_WORD_SHARE:
                 continue
 
-            passages.append(
+            passages.append((
                 PassageMatch(
                     document_id=document_id,
                     file_name=file_name,
@@ -149,8 +192,9 @@ class HybridSearchService:
                     score=0.0,
                     pages_in_document=0,
                     matched_by="meaning",
-                )
-            )
+                ),
+                chunk_text,
+            ))
 
         return passages
 

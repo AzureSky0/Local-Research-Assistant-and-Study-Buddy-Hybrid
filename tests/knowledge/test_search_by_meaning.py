@@ -147,20 +147,63 @@ def test_nearest_only_searches_one_workspace(session: Session, workspace_id: str
 # Hybrid search -----------------------------------------------------------------------------
 
 
-def test_meaning_finds_passages_without_shared_words(session: Session, workspace_id: str) -> None:
+def test_meaning_finds_passages_by_paraphrase(session: Session, workspace_id: str) -> None:
     add_document(session, workspace_id, "adam.pdf", ["Adam keeps moving averages of gradients."])
     add_document(session, workspace_id, "cnn.pdf", ["Convolutional networks for images."])
     embedder = FakeEmbedder()
     embed_all(session, embedder)
 
-    keyword_only = HybridSearchService(session, None).search(workspace_id, "which optimiser works")
-    assert keyword_only.passages == []
-
-    results = HybridSearchService(session, embedder).search(workspace_id, "which optimiser works")
+    # "optimiser" is not in the text; "averages" is, so the document's own
+    # words support the search and meaning ranks the right passage.
+    results = HybridSearchService(session, embedder).search(workspace_id, "optimiser averages")
 
     assert results.used_meaning
-    assert results.passages[0].file_name == "adam.pdf"
-    assert results.passages[0].matched_by == "meaning"
+    assert [p.file_name for p in results.passages] == ["adam.pdf"]
+    assert results.passages[0].matched_by == "both"
+
+
+def test_random_text_finds_nothing(session: Session, workspace_id: str) -> None:
+    add_document(session, workspace_id, "adam.pdf", ["Adam keeps moving averages of gradients."])
+    add_document(session, workspace_id, "cnn.pdf", ["Convolutional networks for images."])
+    embedder = FakeEmbedder()
+    embed_all(session, embedder)
+
+    # One stray word ("networks") is not evidence, and nearest neighbours
+    # alone are never shown.
+    results = HybridSearchService(session, embedder).search(
+        workspace_id, "purple bicycle dancing networks tomorrow morning"
+    )
+
+    assert results.passages == []
+    assert results.is_empty
+
+
+def test_meaning_alone_is_not_evidence(session: Session, workspace_id: str) -> None:
+    add_document(session, workspace_id, "adam.pdf", ["Adam keeps moving averages of gradients."])
+    embedder = FakeEmbedder()
+    embed_all(session, embedder)
+
+    # The fake model treats "optimiser" as close to "adam", but no word of
+    # the search is in the document.
+    results = HybridSearchService(session, embedder).search(workspace_id, "which optimiser works")
+
+    assert results.passages == []
+
+
+def test_pages_with_enough_of_a_long_search_are_kept(session: Session, workspace_id: str) -> None:
+    add_document(
+        session,
+        workspace_id,
+        "gan.pdf",
+        ["A generator and a discriminator are trained together.", "Images only."],
+    )
+
+    results = HybridSearchService(session, None).search(
+        workspace_id, "generator discriminator training networks images stability"
+    )
+
+    assert [p.page_number for p in results.passages] == [1]
+    assert results.total_passages == 1
 
 
 def test_words_and_meaning_are_combined(session: Session, workspace_id: str) -> None:
