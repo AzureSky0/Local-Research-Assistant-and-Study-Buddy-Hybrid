@@ -169,7 +169,8 @@ class StatusPanel(QFrame):
         self._jobs = label("", wrap=True)
         self._meaning_bar = QProgressBar()
         self._meaning_bar.setTextVisible(False)
-        self._meaning_label = label("", "small", wrap=True)
+        self._meaning_label = label("", wrap=True)
+        self._idle = label("All caught up — nothing running.", wrap=True)
         self._note = label("", "small", wrap=True)
 
         self._pause_button = button("Pause background work", None, size="small")
@@ -191,6 +192,7 @@ class StatusPanel(QFrame):
         layout.setContentsMargins(18, 16, 18, 16)
         layout.setSpacing(8)
         layout.addWidget(label("Background work", "heading"))
+        layout.addWidget(self._idle)
         layout.addWidget(self._jobs)
         layout.addWidget(self._meaning_label)
         layout.addWidget(self._meaning_bar)
@@ -221,24 +223,29 @@ class StatusPanel(QFrame):
                 f"Reading: {plural(status.documents_to_read, 'document')} to go"
                 + time_left(status.reading_seconds_left, self._paused)
             )
-        self._jobs.setText("\n".join(jobs) if jobs else "Nothing waiting to be read.")
+        self._jobs.setText("\n".join(jobs))
+        self._jobs.setVisible(bool(jobs))
 
-        meaning_open = status.meaning_total > 0 and not status.meaning_unavailable
-        self._meaning_bar.setVisible(meaning_open)
-        if status.meaning_unavailable:
-            self._meaning_label.setText("Search by meaning: unavailable (word search works)")
-        elif status.meaning_total:
+        # Only work still to do is listed; finished tasks disappear.
+        meaning_running = (
+            not status.meaning_unavailable and status.meaning_done < status.meaning_total
+        )
+        if meaning_running:
+            percent = status.meaning_done * 100 // status.meaning_total
+            self._meaning_label.setText(
+                f"Preparing search by meaning: {percent}%"
+                + time_left(status.meaning_seconds_left, self._paused)
+            )
             self._meaning_bar.setRange(0, status.meaning_total)
             self._meaning_bar.setValue(status.meaning_done)
-            percent = status.meaning_done * 100 // status.meaning_total
-            remaining = status.meaning_done < status.meaning_total
-            self._meaning_label.setText(
-                f"Search by meaning (all workspaces): {status.meaning_done:,} of "
-                f"{status.meaning_total:,} passages ({percent}%)"
-                + (time_left(status.meaning_seconds_left, self._paused) if remaining else "")
-            )
-        else:
-            self._meaning_label.setText("Search by meaning: nothing to prepare yet")
+        elif status.meaning_unavailable:
+            self._meaning_label.setText("Search by meaning is unavailable — word search still works.")
+        self._meaning_label.setVisible(meaning_running or status.meaning_unavailable)
+        self._meaning_bar.setVisible(meaning_running)
+
+        has_work = bool(jobs) or meaning_running
+        self._idle.setVisible(not has_work and not status.meaning_unavailable)
+        self._pause_button.setVisible(has_work or self._paused)
 
         notes = {
             PauseReason.USER: "Paused by you. Nothing is lost; work continues when you resume.",

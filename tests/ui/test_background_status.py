@@ -211,13 +211,13 @@ def test_panel_shows_time_left(qapp: QApplication) -> None:
         )
     )
     assert "about 2 minutes left" in panel._jobs.text()
-    assert "about 6 minutes left" in panel._meaning_label.text()
+    assert panel._meaning_label.text() == "Preparing search by meaning: 40% · about 6 minutes left"
 
     # Not enough measured yet.
     panel.show_status(status(meaning_done=40, meaning_total=100))
     assert "estimating time left" in panel._meaning_label.text()
 
-    # No estimate while paused, and none once finished.
+    # No estimate while paused.
     panel.show_status(
         status(
             pause_reason=PauseReason.USER,
@@ -227,5 +227,30 @@ def test_panel_shows_time_left(qapp: QApplication) -> None:
         )
     )
     assert "left" not in panel._meaning_label.text()
+
+
+def test_panel_lists_only_unfinished_work(qapp: QApplication) -> None:
+    from PySide6.QtWidgets import QWidget
+
+    from app.core.computer_profile import ComputerProfile
+    from app.ui.widgets.status_pill import StatusPanel
+
+    host = QWidget()
+    panel = StatusPanel(host, ComputerProfile.STANDARD)
+
+    panel.show_status(status(documents_to_read=2, meaning_done=40, meaning_total=100))
+    assert panel._jobs.isVisibleTo(panel)
+    assert panel._meaning_label.isVisibleTo(panel)
+    assert not panel._idle.isVisibleTo(panel)
+
+    # Reading finished; meaning still going.
+    panel.show_status(status(meaning_done=90, meaning_total=100))
+    assert not panel._jobs.isVisibleTo(panel)
+    assert panel._meaning_label.isVisibleTo(panel)
+
+    # Everything finished.
     panel.show_status(status())
-    assert "left" not in panel._meaning_label.text()
+    assert not panel._meaning_label.isVisibleTo(panel)
+    assert not panel._meaning_bar.isVisibleTo(panel)
+    assert not panel._pause_button.isVisibleTo(panel)
+    assert panel._idle.isVisibleTo(panel)
