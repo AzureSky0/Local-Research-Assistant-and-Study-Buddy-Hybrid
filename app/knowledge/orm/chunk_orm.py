@@ -72,3 +72,11 @@ class ChunkORM(Base):
         String(64),
         nullable=False,
     )
+
+    # Embedding model whose vector for this chunk is stored, or None when
+    # it has not been embedded yet (or was embedded by another model).
+    embedded_with: Mapped[str | None] = mapped_column(
+        String(128),
+        nullable=True,
+        index=True,
+    )

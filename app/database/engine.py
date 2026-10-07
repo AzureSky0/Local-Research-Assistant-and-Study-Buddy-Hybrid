@@ -20,16 +20,29 @@ def configure_sqlite_connections(engine: Engine) -> None:
       write. Has no effect on in-memory databases.
     - synchronous=NORMAL: safe with WAL and much faster for
       the many small writes made during document processing.
+    - sqlite-vec: the vector index for search by meaning (Decision 035).
     """
 
     @event.listens_for(engine, "connect")
     def _configure(dbapi_connection: Any, connection_record: Any) -> None:
         if isinstance(dbapi_connection, SQLiteConnection):
+            _load_sqlite_vec(dbapi_connection)
+
             cursor = dbapi_connection.cursor()
             cursor.execute("PRAGMA foreign_keys=ON")
             cursor.execute("PRAGMA journal_mode=WAL")
             cursor.execute("PRAGMA synchronous=NORMAL")
             cursor.close()
+
+
+def _load_sqlite_vec(connection: SQLiteConnection) -> None:
+    import sqlite_vec  # type: ignore[import-untyped]
+
+    connection.enable_load_extension(True)
+    try:
+        sqlite_vec.load(connection)
+    finally:
+        connection.enable_load_extension(False)
 
 
 # Imports and background reading write at the same time. With WAL only

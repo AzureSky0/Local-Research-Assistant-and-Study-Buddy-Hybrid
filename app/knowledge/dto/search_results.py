@@ -28,6 +28,10 @@ class PassageMatch:
     snippet: str  # matched words wrapped in HIGHLIGHT_START / HIGHLIGHT_END
     score: float  # lower is more relevant (FTS5 bm25)
     pages_in_document: int  # how many pages of this document match in total
+    # Last page when the passage spans several pages (search by meaning).
+    end_page: int | None = None
+    # "words", "meaning" or "both": how the passage was found.
+    matched_by: str = "words"
 
 
 @dataclass(slots=True)
@@ -43,6 +47,10 @@ class SearchResults:
     widened: bool = False
     # True when the search had only common words ("the"), so pages were not searched.
     too_common: bool = False
+    # True when results combine word search with search by meaning.
+    used_meaning: bool = False
+    # How much of the workspace can be searched by meaning: (passages ready, all passages).
+    meaning_progress: tuple[int, int] = (0, 0)
 
     @property
     def is_empty(self) -> bool:

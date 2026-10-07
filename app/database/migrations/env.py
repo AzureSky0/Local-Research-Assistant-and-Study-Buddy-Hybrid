@@ -18,6 +18,7 @@ from app.documents.orm import DocumentORM  # noqa: F401
 from app.workspace.orm import WorkspaceORM  # noqa: F401
 from app.knowledge.orm import ChunkORM  # noqa: F401
 from app.knowledge.orm.keyword_index_schema import is_keyword_index_table
+from app.knowledge.orm.vector_index_schema import is_vector_index_table
 
 # Future imports
 # from app.knowledge.orm.knowledge_pack_orm import KnowledgePackORM
@@ -42,7 +43,7 @@ def include_name(name: str | None, type_: str, parent_names: object) -> bool:
     cannot be expressed as ORM models.
     """
     if type_ == "table":
-        return not is_keyword_index_table(name)
+        return not (is_keyword_index_table(name) or is_vector_index_table(name))
 
     return True
 
