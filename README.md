@@ -12,9 +12,10 @@ after a one-time model download the app works offline.
 
 # Status
 
-**v0.3 — Knowledge Engine (complete). Now at Demo Gate 1:** feature work is
-paused while we collect feedback on the document workflow. See
-[docs/demo/DEMO_GATE_1.md](docs/demo/DEMO_GATE_1.md).
+**v0.3 — Knowledge Engine (complete). Now building v0.4 — AI Assistant.**
+The first tester demo follows v0.4, so testers can try asking questions
+and getting summaries as well as the document workflow. A draft tester
+guide is in [docs/demo/DEMO_GATE_1.md](docs/demo/DEMO_GATE_1.md).
 
 What works today:
 
@@ -36,7 +37,7 @@ What works today:
 
 Coming next (v0.4): an **Ask** section where a local AI model answers
 questions from your documents, checks each claim against its source, and
-cites the pages.
+cites the pages; plus a short overview and summary of each document.
 
 Not yet supported: scanned PDFs (no OCR), Word files, cloud sync.
 
