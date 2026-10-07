@@ -1,8 +1,12 @@
-APP_NAME = "Local Research Assistant and Study Buddy Hybrid"
-APP_VERSION = "0.1.0"
+APP_NAME = "Loci"
+APP_VERSION = "0.3.0"
 
-APP_DATA_DIRECTORY_NAME = "LocalResearchAssistant"
-DATA_DIR_ENV_VAR = "LRA_DATA_DIR"
+APP_DATA_DIRECTORY_NAME = "Loci"
+# Data folders of earlier versions, moved to the new name on first start.
+LEGACY_DATA_DIRECTORY_NAMES = ("LocalResearchAssistant",)
+
+DATA_DIR_ENV_VAR = "LOCI_DATA_DIR"
+LEGACY_DATA_DIR_ENV_VAR = "LRA_DATA_DIR"
 
 DATABASE_FILENAME = "local_research.db"
 LOG_FILENAME = "app.log"

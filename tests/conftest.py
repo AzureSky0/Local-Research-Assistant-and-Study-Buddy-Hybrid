@@ -1,4 +1,9 @@
+import os
+import tempfile
 from collections.abc import Generator
+
+# Tests never touch the real data folder (set before any app import).
+os.environ["LOCI_DATA_DIR"] = tempfile.mkdtemp(prefix="loci-tests-")
 
 import pytest
 from sqlalchemy import create_engine

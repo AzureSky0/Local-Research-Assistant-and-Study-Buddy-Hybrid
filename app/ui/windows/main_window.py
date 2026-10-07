@@ -3,6 +3,7 @@ from __future__ import annotations
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import QMainWindow, QMessageBox, QStackedWidget
 
+from app.core.constants import APP_NAME
 from app.documents.dto.document_import_result import DocumentImportStatus
 from app.ui.formatting import plural
 from app.ui.managers.activity_manager import ActivityManager, ActivityState, ImportActivity
@@ -36,7 +37,7 @@ class MainWindow(QMainWindow):
         self._workspaces = workspaces
         self._activity = activity
 
-        self.setWindowTitle("Study Buddy")
+        self.setWindowTitle(APP_NAME)
         self.resize(1280, 820)
         self.setMinimumSize(960, 640)
 
@@ -80,11 +81,11 @@ class MainWindow(QMainWindow):
 
     def _on_workspace_changed(self, workspace: Workspace | None) -> None:
         if workspace is None:
-            self.setWindowTitle("Study Buddy")
+            self.setWindowTitle(APP_NAME)
             self._stack.setCurrentWidget(self.home_page)
             return
 
-        self.setWindowTitle(f"{workspace.name} — Study Buddy")
+        self.setWindowTitle(f"{workspace.name} — {APP_NAME}")
         self.workspace_view.show_workspace(workspace)
         self._stack.setCurrentWidget(self.workspace_view)
 

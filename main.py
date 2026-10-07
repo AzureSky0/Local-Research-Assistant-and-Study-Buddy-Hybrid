@@ -34,7 +34,7 @@ def main() -> None:
     initialize_database()
 
     app = QApplication(sys.argv)
-    app.setApplicationName("Study Buddy")
+    app.setApplicationName(settings.app_name)
     apply_theme(app)
 
     # Search by meaning: embeds passages on its own worker (Decision 035).

@@ -1,4 +1,4 @@
-# Demo Gate 1 — Try the document workflow
+# Loci — Demo Gate 1: try the document workflow
 
 Thanks for testing! This takes about **20–30 minutes**. We want to know
 whether adding, organizing and finding things in your documents feels
@@ -83,7 +83,7 @@ Please answer briefly — a few words each is plenty.
    much RAM does your computer have?
 
 If something crashed or looked broken, a screenshot helps a lot. Logs
-are in `%LOCALAPPDATA%\LocalResearchAssistant\logs` if you are happy to
+are in `%LOCALAPPDATA%\Loci\logs` if you are happy to
 share them.
 
 ---

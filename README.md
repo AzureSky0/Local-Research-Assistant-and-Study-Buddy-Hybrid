@@ -1,9 +1,9 @@
-# Local Research Assistant + Study Buddy Hybrid
+# Loci
 
-A desktop app for working with a large collection of your own documents
-(papers, books, notes) — entirely on your computer. Import documents into
-workspaces, then find anything in them by words or by meaning, and jump
-straight to the right page.
+**Your local knowledge bank.** A desktop app for working with a large
+collection of your own documents (papers, books, notes) — entirely on your
+computer. Import documents into workspaces, then find anything in them by
+words or by meaning, and jump straight to the right page.
 
 Everything runs locally: your documents never leave your computer, and
 after a one-time model download the app works offline.
@@ -12,10 +12,9 @@ after a one-time model download the app works offline.
 
 # Status
 
-**v0.3 — Knowledge Engine (complete). Now building v0.4 — AI Assistant.**
-The first tester demo follows v0.4, so testers can try asking questions
-and getting summaries as well as the document workflow. A draft tester
-guide is in [docs/demo/DEMO_GATE_1.md](docs/demo/DEMO_GATE_1.md).
+**v0.3 — Knowledge Engine (complete). Now at Demo Gate 1:** feature work is
+paused while testers try the document workflow (importing, organizing,
+searching). See [docs/demo/DEMO_GATE_1.md](docs/demo/DEMO_GATE_1.md).
 
 What works today:
 
@@ -37,7 +36,7 @@ What works today:
 
 Coming next (v0.4): an **Ask** section where a local AI model answers
 questions from your documents, checks each claim against its source, and
-cites the pages; plus a short overview and summary of each document.
+cites the pages.
 
 Not yet supported: scanned PDFs (no OCR), Word files, cloud sync.
 
@@ -64,12 +63,13 @@ in the background. Search by words works immediately; search by meaning
 starts once the model is ready. After that, no internet is needed.
 
 Your data (database, copies of imported documents, logs, models) is kept in
-the per-user app data folder — `%LOCALAPPDATA%\LocalResearchAssistant` on
-Windows. To use a different folder (for example to try the app without
-touching your real data), set `LRA_DATA_DIR` before starting:
+the per-user app data folder — `%LOCALAPPDATA%\Loci` on
+Windows (an earlier `LocalResearchAssistant` folder is moved there
+automatically). To use a different folder (for example to try the app without
+touching your real data), set `LOCI_DATA_DIR` before starting:
 
 ```powershell
-$env:LRA_DATA_DIR = "D:\lra-test-data"
+$env:LOCI_DATA_DIR = "D:\loci-test-data"
 python -m main
 ```
 
@@ -130,6 +130,17 @@ scripts/benchmark # search benchmark
 
 Each feature folder uses the same layers:
 `domain/  dto/  mapper/  orm/  repository/  services/`.
+
+---
+
+# Name
+
+*Loci* (Latin for "places") comes from the method of loci — the memory
+palace, where knowledge is remembered by the place it is kept. Workspaces
+are the rooms; every answer points back to its place: the page.
+
+The repository keeps its original name, Local Research Assistant + Study
+Buddy Hybrid.
 
 ---
 

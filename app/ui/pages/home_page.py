@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from app.core.constants import APP_NAME
 from app.ui.dialogs.workspace_dialog import WorkspaceDialog
 from app.ui.formatting import format_relative_time, plural
 from app.ui.managers.workspace_manager import WorkspaceManager
@@ -100,7 +101,7 @@ class HomePage(QWidget):
         # Header bar ------------------------------------------------------
         header = surface("header")
         mark = icon_tile("book", "#FFFFFF", t.ACCENT, size=32, icon_size=18)
-        app_name = label("Study Buddy")
+        app_name = label(APP_NAME)
         app_name.setStyleSheet("font-weight: 600; font-size: 16px;")
         settings = button("Settings", None, "settings", t.INK)
         settings.clicked.connect(self.settings_requested)

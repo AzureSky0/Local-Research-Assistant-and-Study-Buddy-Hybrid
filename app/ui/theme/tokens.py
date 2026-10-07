@@ -1,6 +1,6 @@
 """Design tokens: the single source of colors and typography for the UI.
 
-Matches the v0.2 design ("Study Buddy UI Redesign" canvas). Widgets
+Matches the v0.2 design (UI redesign canvas). Widgets
 and the stylesheet read from here instead of hard-coding values.
 """
 

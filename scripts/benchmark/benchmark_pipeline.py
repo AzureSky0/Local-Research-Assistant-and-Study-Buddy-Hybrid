@@ -25,7 +25,7 @@ RESULTS = Path(sys.argv[2]).resolve()
 RESULTS.mkdir(parents=True, exist_ok=True)
 
 # A fresh data directory, so the benchmark never touches real user data.
-os.environ["LRA_DATA_DIR"] = str(RESULTS / "data")
+os.environ["LOCI_DATA_DIR"] = str(RESULTS / "data")
 
 from sqlalchemy import text  # noqa: E402
 

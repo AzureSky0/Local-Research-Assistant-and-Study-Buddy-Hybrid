@@ -5,6 +5,8 @@ from platformdirs import user_data_dir
 
 from app.core.constants import (
     APP_DATA_DIRECTORY_NAME,
+    LEGACY_DATA_DIR_ENV_VAR,
+    LEGACY_DATA_DIRECTORY_NAMES,
     CACHE_DIRECTORY,
     CHROMA_DIRECTORY,
     DATABASE_DIRECTORY,
@@ -20,18 +22,45 @@ MIGRATIONS_DIR = PROJECT_ROOT / "app" / "database" / "migrations"
 ALEMBIC_CONFIG_PATH = PROJECT_ROOT / "alembic.ini"
 
 
+def _user_data_dir(name: str) -> Path:
+    return Path(user_data_dir(name, appauthor=False))
+
+
+def adopt_legacy_data_dir(target: Path, legacy_dirs: list[Path]) -> Path:
+    """Return the data folder to use, moving an earlier version's folder to `target`.
+
+    If the folder cannot be moved (for example a file in it is open),
+    the old folder keeps being used, so no data ever goes missing.
+    """
+    if target.exists():
+        return target
+
+    for legacy in legacy_dirs:
+        if legacy.is_dir():
+            try:
+                legacy.rename(target)
+            except OSError:
+                return legacy
+            return target
+
+    return target
+
+
 def _resolve_data_dir() -> Path:
     """Return the application data directory.
 
     Uses the per-user application data directory unless overridden
-    by the LRA_DATA_DIR environment variable.
+    by the LOCI_DATA_DIR (or older LRA_DATA_DIR) environment variable.
     """
-    override = os.environ.get(DATA_DIR_ENV_VAR)
+    override = os.environ.get(DATA_DIR_ENV_VAR) or os.environ.get(LEGACY_DATA_DIR_ENV_VAR)
 
     if override:
         return Path(override).resolve()
 
-    return Path(user_data_dir(APP_DATA_DIRECTORY_NAME, appauthor=False))
+    return adopt_legacy_data_dir(
+        _user_data_dir(APP_DATA_DIRECTORY_NAME),
+        [_user_data_dir(name) for name in LEGACY_DATA_DIRECTORY_NAMES],
+    )
 
 
 DATA_DIR = _resolve_data_dir()
