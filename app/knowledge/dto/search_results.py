@@ -37,6 +37,10 @@ class SearchResults:
     passages: list[PassageMatch] = field(default_factory=list)
     total_passages: int = 0
     total_documents: int = 0
+    # "all": every word appears on each page; "any": pages with some of the words.
+    match_mode: str = "all"
+    # True when a short search found no page with every word and was widened.
+    widened: bool = False
 
     @property
     def is_empty(self) -> bool:

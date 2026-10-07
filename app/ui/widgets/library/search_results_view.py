@@ -287,11 +287,21 @@ class SearchResultsView(QWidget):
                 parts.append(f"{plural(len(results.name_matches), 'file name')}")
             self._summary.setText(" · ".join(parts))
 
-        self._note.setVisible(documents_still_reading > 0)
-        self._note.setText(
-            f"{plural(documents_still_reading, 'document')} still being read "
-            "— they will appear in search once they are ready."
-        )
+        notes = []
+        if results.widened:
+            notes.append(
+                "No page contains all your words — showing the closest matches."
+            )
+        elif results.match_mode == "any" and results.passages:
+            notes.append("Showing pages that contain most of your words, best matches first.")
+        if documents_still_reading > 0:
+            notes.append(
+                f"{plural(documents_still_reading, 'document')} still being read "
+                "— they will appear in search once they are ready."
+            )
+
+        self._note.setVisible(bool(notes))
+        self._note.setText("\n".join(notes))
 
         if results.name_matches:
             self._add_section("File names")

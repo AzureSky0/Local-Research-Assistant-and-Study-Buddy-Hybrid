@@ -5,7 +5,12 @@ from sqlalchemy.orm import Session
 from app.documents.services.document_service import DocumentService
 from app.knowledge.dto.search_results import DocumentMatch, SearchResults
 from app.knowledge.repository.keyword_index_repository import KeywordIndexRepository
-from app.knowledge.services.search_query import build_match_query
+from app.knowledge.services.search_query import (
+    MatchMode,
+    build_match_query,
+    choose_mode,
+    parse_query,
+)
 
 MAX_PASSAGES = 50
 PASSAGES_PER_DOCUMENT = 3
@@ -52,18 +57,37 @@ class KeywordSearchService:
             for document in self._documents.find_by_name(workspace_id, query, MAX_NAME_MATCHES)
         ]
 
-        match_query = build_match_query(query)
+        mode = choose_mode(parse_query(query))
+        self._search_passages(results, workspace_id, query, mode, limit)
 
-        if match_query is not None:
-            results.passages = self._index.search(
-                workspace_id,
-                match_query,
-                limit,
-                PASSAGES_PER_DOCUMENT,
-            )
-            results.total_passages, results.total_documents = self._index.count(
-                workspace_id,
-                match_query,
-            )
+        # A short search that no page fully matches: show the closest pages.
+        if mode is MatchMode.ALL and not results.passages:
+            self._search_passages(results, workspace_id, query, MatchMode.ANY, limit)
+            results.widened = bool(results.passages)
 
         return results
+
+    def _search_passages(
+        self,
+        results: SearchResults,
+        workspace_id: str,
+        query: str,
+        mode: MatchMode,
+        limit: int,
+    ) -> None:
+        match_query = build_match_query(query, mode)
+
+        if match_query is None:
+            return
+
+        results.match_mode = mode.value
+        results.passages = self._index.search(
+            workspace_id,
+            match_query,
+            limit,
+            PASSAGES_PER_DOCUMENT,
+        )
+        results.total_passages, results.total_documents = self._index.count(
+            workspace_id,
+            match_query,
+        )

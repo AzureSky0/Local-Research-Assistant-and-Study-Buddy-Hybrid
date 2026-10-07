@@ -213,3 +213,85 @@ def test_one_long_document_does_not_hide_others(
     assert results.total_documents == 2
     book_passage = next(p for p in results.passages if p.file_name == "book.pdf")
     assert book_passage.pages_in_document == 40
+
+
+# Match modes -----------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("typed", "expected"),
+    [
+        ("which optimizer uses moving averages", '("optimizer" OR "moving" OR "averages"*)'),
+        ('"learning rate" for the optimizer', '"learning rate" AND "optimizer"*'),
+        ("the and of", '("the" OR "and" OR "of"*)'),
+    ],
+)
+def test_build_any_word_query(typed: str, expected: str) -> None:
+    from app.knowledge.services.search_query import MatchMode
+
+    assert build_match_query(typed, MatchMode.ANY) == expected
+
+
+@pytest.mark.parametrize(
+    ("typed", "mode"),
+    [
+        ("gradient", "all"),
+        ("gradient descent", "all"),
+        ("the gradient of the loss", "all"),  # 2 meaningful words
+        ("which optimizer keeps moving averages of gradients", "any"),
+        ('"learning rate" warmup schedule cosine decay', "any"),
+    ],
+)
+def test_short_searches_need_all_words_questions_need_any(typed: str, mode: str) -> None:
+    from app.knowledge.services.search_query import choose_mode, parse_query
+
+    assert choose_mode(parse_query(typed)).value == mode
+
+
+def test_questions_find_the_relevant_page(
+    session: Session, workspace_id: str, search: KeywordSearchService
+) -> None:
+    add_document(session, workspace_id, "adam.pdf", ["Adam keeps exponential moving averages of the gradient."])
+    add_document(session, workspace_id, "other.pdf", ["Convolutional networks for images."])
+
+    results = search.search(workspace_id, "which optimizer keeps moving averages of past gradients?")
+
+    assert results.match_mode == "any"
+    assert results.passages[0].file_name == "adam.pdf"
+    assert not results.widened
+
+
+def test_short_search_without_full_match_is_widened(
+    session: Session, workspace_id: str, search: KeywordSearchService
+) -> None:
+    add_document(session, workspace_id, "a.pdf", ["gradient descent basics"])
+
+    results = search.search(workspace_id, "gradient boosting")
+
+    assert results.widened
+    assert results.match_mode == "any"
+    assert [p.file_name for p in results.passages] == ["a.pdf"]
+
+
+def test_short_search_with_full_match_is_not_widened(
+    session: Session, workspace_id: str, search: KeywordSearchService
+) -> None:
+    add_document(session, workspace_id, "a.pdf", ["gradient descent basics"])
+    add_document(session, workspace_id, "b.pdf", ["gradient boosting trees"])
+
+    results = search.search(workspace_id, "gradient boosting")
+
+    assert not results.widened
+    assert results.match_mode == "all"
+    assert [p.file_name for p in results.passages] == ["b.pdf"]
+
+
+def test_quoted_phrase_stays_required_in_questions(
+    session: Session, workspace_id: str, search: KeywordSearchService
+) -> None:
+    add_document(session, workspace_id, "a.pdf", ["the learning rate schedule with warmup and cosine decay"])
+    add_document(session, workspace_id, "b.pdf", ["warmup cosine decay schedule without that phrase"])
+
+    results = search.search(workspace_id, '"learning rate" warmup cosine decay schedule')
+
+    assert [p.file_name for p in results.passages] == ["a.pdf"]
