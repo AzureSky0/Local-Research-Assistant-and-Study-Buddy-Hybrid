@@ -9,6 +9,7 @@ from app.core.paths import DATA_DIR, ensure_app_directories
 from app.core.tasks.async_task_executor import AsyncTaskExecutor
 from app.database.init_db import initialize_database
 from app.ui.managers.activity_manager import ActivityManager
+from app.ui.managers.embedding_manager import EmbeddingManager
 from app.ui.managers.library_manager import LibraryManager
 from app.ui.managers.processing_manager import ProcessingManager
 from app.ui.managers.workspace_manager import WorkspaceManager
@@ -35,8 +36,12 @@ def main() -> None:
     app.setApplicationName("Study Buddy")
     apply_theme(app)
 
+    # Search by meaning: embeds passages on its own worker (Decision 035).
+    embedding = EmbeddingManager(AsyncTaskExecutor(max_workers=1))
+    logger.info("Computer profile: %s, search model: %s", embedding.profile.label, embedding.spec.model_id)
+
     workspaces = WorkspaceManager()
-    library = LibraryManager()
+    library = LibraryManager(query_embedder=embedding.query_embedder)
     activity = ActivityManager(AsyncTaskExecutor(max_workers=IMPORT_WORKERS))
 
     # Reading documents has its own single worker, separate from imports.
@@ -45,12 +50,14 @@ def main() -> None:
     # Stop background work cleanly when the application exits.
     app.aboutToQuit.connect(activity.shutdown)
     app.aboutToQuit.connect(processing.shutdown)
+    app.aboutToQuit.connect(embedding.shutdown)
 
-    window = MainWindow(workspaces, library, activity, processing)
+    window = MainWindow(workspaces, library, activity, processing, embedding)
     window.show()
 
-    # Resume reading anything left unfinished last time.
+    # Resume anything left unfinished last time.
     processing.recover_and_start()
+    embedding.start()
 
     sys.exit(app.exec())
 

@@ -44,6 +44,8 @@ FILE_NAME_ROLE = Qt.ItemDataRole.UserRole + 3
 FILE_TYPE_ROLE = Qt.ItemDataRole.UserRole + 4
 PAGE_ROLE = Qt.ItemDataRole.UserRole + 5
 SNIPPET_HTML_ROLE = Qt.ItemDataRole.UserRole + 6
+END_PAGE_ROLE = Qt.ItemDataRole.UserRole + 7
+MATCHED_BY_ROLE = Qt.ItemDataRole.UserRole + 8
 
 HIGHLIGHT_COLOR = "#FFE9A8"
 PADDING_X = 18
@@ -202,7 +204,17 @@ class SearchResultsDelegate(QStyledItemDelegate):
         painter.drawText(badge, Qt.AlignmentFlag.AlignCenter, swatch.label)
 
         page = index.data(PAGE_ROLE)
-        page_text = f"Page {page}" if page else ""
+        end_page = index.data(END_PAGE_ROLE)
+        if page and end_page:
+            page_text = f"Pages {page}–{end_page}"
+        elif page:
+            page_text = f"Page {page}"
+        else:
+            page_text = ""
+
+        # Passages that share no words with the search were found by meaning.
+        if index.data(MATCHED_BY_ROLE) == "meaning":
+            page_text = f"by meaning · {page_text}" if page_text else "by meaning"
 
         name_font = QFont(self._view.font())
         name_font.setWeight(QFont.Weight.DemiBold)
@@ -275,6 +287,12 @@ class SearchResultsView(QWidget):
 
         if results.is_empty:
             self._summary.setText(f"No matches for “{results.query}”.")
+        elif results.used_meaning:
+            documents = len({passage.document_id for passage in results.passages})
+            parts = [f"Best matches in {plural(documents, 'document')}, by words and meaning"]
+            if results.name_matches:
+                parts.append(f"{plural(len(results.name_matches), 'file name')}")
+            self._summary.setText(" · ".join(parts))
         else:
             parts = []
             if results.passages:
@@ -288,15 +306,21 @@ class SearchResultsView(QWidget):
             self._summary.setText(" · ".join(parts))
 
         notes = []
+        done, total = results.meaning_progress
+        if results.used_meaning and total and done < total:
+            notes.append(
+                f"Search by meaning covers {done * 100 // total}% of passages so far "
+                "— results will improve as it finishes."
+            )
         if results.too_common:
             notes.append(
                 "Words like these appear on almost every page — add a more specific word."
             )
-        elif results.widened:
+        elif results.widened and not results.used_meaning:
             notes.append(
                 "No page contains all your words — showing the closest matches."
             )
-        elif results.match_mode == "any" and results.passages:
+        elif results.match_mode == "any" and results.passages and not results.used_meaning:
             notes.append("Showing pages that contain most of your words, best matches first.")
         if documents_still_reading > 0:
             notes.append(
@@ -322,6 +346,8 @@ class SearchResultsView(QWidget):
                     passage.file_type,
                     # Text and Markdown files are a single page.
                     page=passage.page_number if passage.file_type == "pdf" else None,
+                    end_page=passage.end_page if passage.file_type == "pdf" else None,
+                    matched_by=passage.matched_by,
                     snippet_html=snippet_to_html(passage.snippet),
                     tooltip=f"{passage.file_name}, page {passage.page_number}",
                 )
@@ -360,6 +386,8 @@ class SearchResultsView(QWidget):
         page: int | None = None,
         snippet_html: str = "",
         tooltip: str | None = None,
+        end_page: int | None = None,
+        matched_by: str = "words",
     ) -> None:
         item = QStandardItem(file_name)
         item.setData(kind, KIND_ROLE)
@@ -368,6 +396,8 @@ class SearchResultsView(QWidget):
         item.setData(file_type, FILE_TYPE_ROLE)
         item.setData(page, PAGE_ROLE)
         item.setData(snippet_html, SNIPPET_HTML_ROLE)
+        item.setData(end_page, END_PAGE_ROLE)
+        item.setData(matched_by, MATCHED_BY_ROLE)
         item.setToolTip(tooltip or file_name)
         item.setEditable(False)
         self._model.appendRow(item)

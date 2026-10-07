@@ -215,3 +215,40 @@ def test_excerpt_centres_on_matching_words(text: str, words: list[str], expected
     excerpt = _excerpt(text, words)
     assert excerpt.startswith(expected_start)
     assert "\x02gradient\x03" in excerpt or words != ["gradient"]
+
+
+def test_unrelated_passages_are_not_added(session: Session, workspace_id: str) -> None:
+    add_document(session, workspace_id, "adam.pdf", ["Adam optimizer."])
+    add_document(session, workspace_id, "unrelated.pdf", ["Completely different subject."])
+    embedder = FakeEmbedder()
+    embed_all(session, embedder)
+
+    results = HybridSearchService(session, embedder).search(workspace_id, "adam")
+
+    assert [p.file_name for p in results.passages] == ["adam.pdf"]
+
+
+def test_word_match_inside_a_meaning_passage_is_one_result(
+    session: Session, workspace_id: str
+) -> None:
+    # Three short pages form one chunk spanning pages 1-3.
+    add_document(session, workspace_id, "book.pdf", ["Contents", "Preface", "Backpropagation explained"])
+    embedder = FakeEmbedder()
+    embed_all(session, embedder)
+
+    results = HybridSearchService(session, embedder).search(workspace_id, "backpropagation")
+
+    assert len(results.passages) == 1
+    assert results.passages[0].page_number == 3
+    assert results.passages[0].matched_by == "both"
+
+
+def test_number_tables_are_not_shown_as_meaning_matches(session: Session, workspace_id: str) -> None:
+    add_document(session, workspace_id, "table.pdf", ["optimiser 68.9 12.6 83.0 72.5 48.6 45.4 52.6 55.5 76.0 81.1"])
+    add_document(session, workspace_id, "adam.pdf", ["Adam is an optimizer with moving averages."])
+    embedder = FakeEmbedder()
+    embed_all(session, embedder)
+
+    results = HybridSearchService(session, embedder).search(workspace_id, "which adam works")
+
+    assert [p.file_name for p in results.passages] == ["adam.pdf"]

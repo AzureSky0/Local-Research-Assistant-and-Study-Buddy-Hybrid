@@ -6,6 +6,8 @@ from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QStackedWidget, QWidget
 
 from app.ui.managers.activity_manager import ActivityManager, ImportActivity
+from app.documents.domain import Document, DocumentProcessingStatus
+from app.ui.managers.embedding_manager import EmbeddingManager
 from app.ui.managers.library_manager import LibraryManager
 from app.ui.managers.processing_manager import ProcessingManager
 from app.ui.managers.workspace_manager import WorkspaceManager
@@ -28,15 +30,17 @@ class WorkspaceView(QWidget):
         library: LibraryManager,
         activity: ActivityManager,
         processing: ProcessingManager,
+        embedding: EmbeddingManager,
     ) -> None:
         super().__init__()
         self.setObjectName("page")
+        self._embedding = embedding
         self._workspaces = workspaces
         self._library = library
         self._activity = activity
 
         self.sidebar = Sidebar(workspaces)
-        self.library_page = LibraryPage(library)
+        self.library_page = LibraryPage(library, embedding)
         self.activity_page = ActivityPage(activity)
 
         self._pages = QStackedWidget()
@@ -64,9 +68,16 @@ class WorkspaceView(QWidget):
         # Reading starts as soon as the first document is imported.
         activity.document_imported.connect(lambda _: processing.start())
         processing.document_updated.connect(library.on_document_updated)
+
+        processing.document_updated.connect(self._on_document_processed)
         self.library_page.retry_requested.connect(processing.retry)
         self.library_page.notification.connect(self.notification)
         activity.running_count_changed.connect(self._on_running_count_changed)
+
+    def _on_document_processed(self, document: Document) -> None:
+        # A document that finished reading has new passages to embed.
+        if document.processing_status is DocumentProcessingStatus.READY:
+            self._embedding.start()
 
     def show_workspace(self, workspace: Workspace) -> None:
         self.sidebar.set_workspace(workspace)

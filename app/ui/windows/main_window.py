@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QMainWindow, QMessageBox, QStackedWidget
 from app.documents.dto.document_import_result import DocumentImportStatus
 from app.ui.formatting import plural
 from app.ui.managers.activity_manager import ActivityManager, ActivityState, ImportActivity
+from app.ui.managers.embedding_manager import EmbeddingManager
 from app.ui.managers.library_manager import LibraryManager
 from app.ui.managers.processing_manager import ProcessingManager
 from app.ui.managers.workspace_manager import WorkspaceManager
@@ -26,6 +27,7 @@ class MainWindow(QMainWindow):
         library: LibraryManager,
         activity: ActivityManager,
         processing: ProcessingManager,
+        embedding: EmbeddingManager,
     ) -> None:
         super().__init__()
         self._workspaces = workspaces
@@ -36,8 +38,8 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(960, 640)
 
         self.home_page = HomePage(workspaces)
-        self.workspace_view = WorkspaceView(workspaces, library, activity, processing)
-        self.settings_page = SettingsPage()
+        self.workspace_view = WorkspaceView(workspaces, library, activity, processing, embedding)
+        self.settings_page = SettingsPage(embedding)
 
         self._stack = QStackedWidget()
         self._stack.setObjectName("appRoot")

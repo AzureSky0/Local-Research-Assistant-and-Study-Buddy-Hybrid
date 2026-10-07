@@ -9,12 +9,15 @@ from sqlalchemy.orm import Session
 
 from app.core.tasks.async_task_executor import AsyncTaskExecutor
 from app.documents.dto.document_import_result import DocumentImportStatus
+from app.core.user_preferences import UserPreferences
 from app.ui.managers.activity_manager import ActivityManager, ActivityState
+from app.ui.managers.embedding_manager import EmbeddingManager
 from app.ui.managers.library_manager import LibraryManager
 from app.ui.managers.processing_manager import ProcessingManager
 from app.ui.managers.workspace_manager import WorkspaceManager
 from app.ui.pages.home_page import WorkspaceCard
 from app.ui.windows.main_window import MainWindow
+from tests.knowledge.fake_embedder import FakeEmbedder
 from tests.ui.conftest import make_library, wait_until
 
 
@@ -23,12 +26,19 @@ def window(
     qapp: QApplication,
     session_factory: Callable[[], Session],
 ) -> Generator[MainWindow, None, None]:
+    embedding = EmbeddingManager(
+        AsyncTaskExecutor(max_workers=1),
+        session_factory,
+        embedder_factory=lambda spec: FakeEmbedder(),
+        preferences=UserPreferences(),
+        save=lambda preferences: None,
+    )
     workspaces = WorkspaceManager(session_factory)
-    library = LibraryManager(session_factory)
+    library = LibraryManager(session_factory, query_embedder=embedding.query_embedder)
     activity = ActivityManager(AsyncTaskExecutor(max_workers=1), session_factory)
     processing = ProcessingManager(AsyncTaskExecutor(max_workers=1), session_factory)
 
-    main_window = MainWindow(workspaces, library, activity, processing)
+    main_window = MainWindow(workspaces, library, activity, processing, embedding)
     main_window.resize(1280, 800)
     main_window.show()
 
@@ -36,6 +46,7 @@ def window(
 
     activity.shutdown()
     processing.shutdown()
+    embedding.shutdown()
     main_window.close()
     main_window.deleteLater()
 
@@ -261,7 +272,7 @@ def test_search_finds_text_inside_documents(
     results = page._results
     # Two sections (file names, inside documents) plus one row each.
     assert results.row_count == 4
-    assert "1 page in 1 document" in results._summary.text()
+    assert "1 document" in results._summary.text()
 
     passage_index = results._model.index(3, 0)
     results._list.clicked.emit(passage_index)
@@ -348,3 +359,37 @@ def test_details_panel_closes_with_button_and_escape(
     QTest.keyClick(page._table, Qt.Key.Key_Escape)
     wait_until(lambda: not page._details.isVisible())
     assert not page._table.selectionModel().hasSelection()
+
+
+def test_search_by_meaning_after_documents_are_embedded(
+    window: MainWindow,
+    tmp_path: Path,
+) -> None:
+    from app.documents.domain import DocumentProcessingStatus
+
+    folder = tmp_path / "notes"
+    folder.mkdir()
+    (folder / "adam.md").write_text("Adam keeps moving averages of gradients.", encoding="utf-8")
+    (folder / "cnn.md").write_text("Convolutional networks for images.", encoding="utf-8")
+
+    workspace = window._workspaces.create_workspace("Notes", None, "blue")
+    window._workspaces.open_workspace(workspace.id)
+    window.workspace_view._import_folder(folder)
+
+    page = window.workspace_view.library_page
+    embedding = window.workspace_view._embedding
+    wait_until(
+        lambda: len(page._model.documents) == 2
+        and all(d.processing_status is DocumentProcessingStatus.READY for d in page._model.documents)
+    )
+    wait_until(lambda: embedding.progress(workspace.id) == (2, 2) and not embedding.is_running)
+    wait_until(lambda: embedding.query_embedder() is not None)
+
+    # No shared words with the note: only search by meaning can find it.
+    page._search.input.setText("which optimiser works")
+    wait_until(lambda: page._browse.currentIndex() == 1)
+
+    assert "by words and meaning" in page._results._summary.text()
+    assert page._results._model.item(1).text() == "adam.md"
+    assert not page._meaning_row.isVisibleTo(page)
+

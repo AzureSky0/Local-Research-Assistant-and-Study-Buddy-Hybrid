@@ -33,6 +33,18 @@ logger = logging.getLogger(__name__)
 # How many chunks search by meaning considers before combining.
 MEANING_CANDIDATES = 60
 
+# Nearest neighbours are returned even when nothing is related; passages
+# farther than this cosine distance (similarity below 0.1) are dropped.
+MAX_MEANING_DISTANCE = 0.9
+
+# Small embedding models give related and unrelated passages similar
+# distances, so passages found only by meaning (no shared words) are
+# limited to the closest few...
+MEANING_ONLY_TOP = 20
+
+# ...and must be mostly words: number tables embed to vague vectors.
+MIN_WORD_SHARE = 0.5
+
 # Reciprocal rank fusion constant (the usual value; Cormack et al. 2009).
 RRF_K = 60
 
@@ -81,7 +93,11 @@ class HybridSearchService:
         except EmbeddingModelUnavailableError:
             return results
 
-        matches = vectors.nearest(workspace_id, query_vector, MEANING_CANDIDATES)
+        matches = [
+            match
+            for match in vectors.nearest(workspace_id, query_vector, MEANING_CANDIDATES)
+            if match.distance < MAX_MEANING_DISTANCE
+        ]
         meaning_passages = self._passages_for_chunks([m.chunk_id for m in matches], results.query)
 
         results.passages = _fuse(results.passages, meaning_passages, limit)
@@ -118,6 +134,10 @@ class HybridSearchService:
                 continue
 
             _, document_id, start_page, end_page, chunk_text, file_name, file_type = row
+
+            if _word_share(chunk_text) < MIN_WORD_SHARE:
+                continue
+
             passages.append(
                 PassageMatch(
                     document_id=document_id,
@@ -147,13 +167,30 @@ def _fuse(by_words: list[PassageMatch], by_meaning: list[PassageMatch], limit: i
         candidate.score += 1 / (RRF_K + rank + 1)
 
     for rank, passage in enumerate(by_meaning):
-        key = (passage.document_id, passage.page_number)
-        if key in candidates:
-            candidate = candidates[key]
-            # Keep the highlighted keyword snippet, but remember the page range.
-            candidate.passage = replace(candidate.passage, end_page=passage.end_page)
+        # A passage found by meaning spans pages; if a page found by words
+        # falls inside it, they are the same passage: keep the precise page
+        # and its highlighted snippet.
+        last_page = passage.end_page or passage.page_number
+        overlapping = next(
+            (
+                existing
+                for (document_id, page), existing in candidates.items()
+                if document_id == passage.document_id
+                and existing.by_words
+                and not existing.by_meaning
+                and passage.page_number <= page <= last_page
+            ),
+            None,
+        )
+
+        if overlapping is not None:
+            candidate = overlapping
         else:
-            candidate = candidates[key] = _Candidate(passage)
+            key = (passage.document_id, passage.page_number)
+            if key not in candidates and rank >= MEANING_ONLY_TOP:
+                continue
+            candidate = candidates.setdefault(key, _Candidate(passage))
+
         candidate.by_meaning = True
         candidate.score += 1 / (RRF_K + rank + 1)
 
@@ -188,6 +225,14 @@ def _fuse(by_words: list[PassageMatch], by_meaning: list[PassageMatch], limit: i
             break
 
     return fused[:limit]
+
+
+def _word_share(text: str) -> float:
+    """Share of tokens that contain letters (tables of numbers score low)."""
+    tokens = text.split()
+    if not tokens:
+        return 0.0
+    return sum(1 for token in tokens if any(c.isalpha() for c in token)) / len(tokens)
 
 
 def _query_words(query: str) -> list[str]:

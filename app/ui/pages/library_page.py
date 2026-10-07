@@ -20,6 +20,7 @@ from app.documents.domain import Document, DocumentProcessingStatus
 from app.documents.supported_formats import SUPPORTED_EXTENSIONS
 from app.ui.document_opener import open_document
 from app.ui.formatting import plural
+from app.ui.managers.embedding_manager import EmbeddingManager
 from app.ui.managers.library_manager import LibraryManager
 from app.ui.models.document_table_delegate import DocumentTableDelegate
 from app.ui.models.document_table_model import (
@@ -61,11 +62,12 @@ class LibraryPage(QWidget):
     retry_requested = Signal(str)  # document id
     notification = Signal(str)  # message for the user
 
-    def __init__(self, library: LibraryManager) -> None:
+    def __init__(self, library: LibraryManager, embedding: EmbeddingManager | None = None) -> None:
         super().__init__()
         self.setObjectName("page")
         self.setAcceptDrops(True)
         self._library = library
+        self._embedding = embedding
         self._running_imports = 0
 
         # Header ------------------------------------------------------------
@@ -79,8 +81,21 @@ class LibraryPage(QWidget):
         add_folder = button("Add folder", "secondary", "folder", t.INK)
         add_folder.clicked.connect(self.choose_folder)
 
+        # Search by meaning: progress or why it is unavailable.
+        self._meaning_status = label("", "small")
+        self._meaning_retry = button("Try again", "link")
+        self._meaning_retry.clicked.connect(self._retry_meaning)
+        self._meaning_row = QWidget()
+        self._meaning_row.setLayout(hbox(self._meaning_status, self._meaning_retry, 1, spacing=6))
+        self._meaning_row.hide()
+
         header = hbox(
-            vbox(title, hbox(self._summary, self._activity_link, 1, spacing=6), spacing=4),
+            vbox(
+                title,
+                hbox(self._summary, self._activity_link, 1, spacing=6),
+                self._meaning_row,
+                spacing=4,
+            ),
             1,
             add_files,
             add_folder,
@@ -220,6 +235,11 @@ class LibraryPage(QWidget):
         library.document_updated.connect(self._on_document_updated)
 
         self._update_summary()
+
+        if embedding is not None:
+            embedding.progress_changed.connect(lambda done, total: self._update_meaning_status())
+            embedding.unavailable.connect(lambda message: self._update_meaning_status())
+            library.documents_reset.connect(lambda _: self._update_meaning_status())
 
     # External updates ---------------------------------------------------------
 
@@ -365,6 +385,42 @@ class LibraryPage(QWidget):
         indexes = self._table.selectionModel().selectedRows()
         document = indexes[0].data(DOCUMENT_ROLE) if indexes else None
         self._details.show_document(document)
+
+    def _update_meaning_status(self) -> None:
+        """Show how much of this workspace can be searched by meaning."""
+        workspace_id = self._library.workspace_id
+
+        if self._embedding is None or workspace_id is None:
+            self._meaning_row.hide()
+            return
+
+        message = self._embedding.unavailable_message
+        self._meaning_retry.setVisible(message is not None)
+
+        if message is not None:
+            self._meaning_status.setText("Search by meaning is unavailable — only word search works for now.")
+            self._meaning_status.setToolTip(message)
+            self._meaning_row.show()
+            return
+
+        done, total = self._embedding.progress(workspace_id)
+        self._meaning_status.setToolTip("")
+
+        if total == 0 or done >= total:
+            self._meaning_row.hide()
+            return
+
+        self._meaning_status.setText(
+            f"Preparing search by meaning: {done * 100 // total}% of passages "
+            "— word search already works."
+        )
+        self._meaning_row.show()
+
+    def _retry_meaning(self) -> None:
+        if self._embedding is not None:
+            self._embedding.start()
+            self._meaning_status.setText("Trying again…")
+            self._meaning_retry.hide()
 
     def _update_summary(self) -> None:
         documents = self._model.documents

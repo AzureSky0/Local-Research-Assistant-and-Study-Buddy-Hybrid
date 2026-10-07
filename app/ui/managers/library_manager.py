@@ -9,9 +9,13 @@ from app.database.session import create_session
 from app.documents.domain import Document
 from app.documents.services.document_service import DocumentService
 from app.knowledge.dto.search_results import SearchResults
-from app.knowledge.services.keyword_search_service import KeywordSearchService
+from app.knowledge.embeddings.embedder import Embedder
+from app.knowledge.services.hybrid_search_service import HybridSearchService
 
 SessionFactory = Callable[[], Session]
+
+# Returns the embedder for queries, or None while search by meaning is unavailable.
+QueryEmbedderProvider = Callable[[], Embedder | None]
 
 
 class LibraryManager(QObject):
@@ -25,10 +29,12 @@ class LibraryManager(QObject):
     def __init__(
         self,
         session_factory: SessionFactory = create_session,
+        query_embedder: QueryEmbedderProvider = lambda: None,
         parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self._session_factory = session_factory
+        self._query_embedder = query_embedder
         self._workspace_id: str | None = None
 
     @property
@@ -59,12 +65,14 @@ class LibraryManager(QObject):
             self.document_updated.emit(document)
 
     def search(self, text: str) -> SearchResults:
-        """Search file names and document text in the open workspace."""
+        """Search file names and document text, by words and by meaning."""
         if self._workspace_id is None:
             return SearchResults(query=text.strip())
 
         with self._session_factory() as session:
-            return KeywordSearchService(session).search(self._workspace_id, text)
+            return HybridSearchService(session, self._query_embedder()).search(
+                self._workspace_id, text
+            )
 
     def remove_document(self, document_id: str) -> bool:
         """Remove a document from the workspace. The original file is untouched."""
