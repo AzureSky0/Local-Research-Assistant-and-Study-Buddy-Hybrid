@@ -44,8 +44,14 @@ Not yet supported: scanned PDFs (no OCR), Word files, cloud sync.
 
 # Running the app
 
-Requirements: Windows 10/11 (macOS and Linux should work but are untested),
-Python **3.12**, about 1 GB of free disk space, 8 GB RAM recommended.
+**Easiest (Windows, no Python needed):** download `Loci-<version>-windows.zip`
+from the [Releases page](https://github.com/AzureSky0/Local-Research-Assistant-and-Study-Buddy-Hybrid/releases), extract it, and double-click
+`Loci.exe`. Windows may warn that the app is unsigned: **More info → Run
+anyway**.
+
+**From source:** Windows 10/11 (macOS and Linux should work but are
+untested), Python **3.12**, about 1 GB of free disk space, 8 GB RAM
+recommended.
 
 ```powershell
 git clone https://github.com/AzureSky0/Local-Research-Assistant-and-Study-Buddy-Hybrid.git
@@ -82,6 +88,19 @@ pytest            # all tests (UI tests run headless)
 ruff check app tests
 mypy app
 ```
+
+For detailed logs while developing, put `DEBUG=true` in a `.env` file in
+the project folder.
+
+To build the Windows app (`dist/Loci/Loci.exe` and a zip to share):
+
+```powershell
+pip install pyinstaller
+python scripts/build_windows.py
+```
+
+The build is defined in `packaging/loci.spec`. Test the result on a
+computer (or in a folder) without Python before sharing it.
 
 Database changes go through Alembic migrations (`app/database/migrations`);
 the app upgrades the database automatically on start.

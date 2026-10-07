@@ -30,6 +30,7 @@ data/
 build/
 dist/
 *.spec
+!packaging/*.spec
 
 # Environment variables
 .env

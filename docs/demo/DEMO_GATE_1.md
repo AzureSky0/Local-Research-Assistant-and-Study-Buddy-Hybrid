@@ -15,19 +15,23 @@ what we need to hear.
 
 ## 1. Set up (about 5 minutes)
 
-You need Python 3.12 and git.
+You need Windows 10 or 11 and about 1 GB of free disk space. No Python or
+other software is needed.
 
-```powershell
-git clone https://github.com/AzureSky0/Local-Research-Assistant-and-Study-Buddy-Hybrid.git
-cd Local-Research-Assistant-and-Study-Buddy-Hybrid
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-python -m main
-```
+1. Download **Loci-0.3.0-windows.zip** from the
+   [Releases page](https://github.com/AzureSky0/Local-Research-Assistant-and-Study-Buddy-Hybrid/releases) (about 120 MB).
+2. Right-click the zip → **Extract All…**, and choose a folder you will
+   find again (for example Documents).
+3. Open the extracted **Loci** folder and double-click **Loci.exe**.
+4. Windows may say *"Windows protected your PC"* because the app is not
+   signed yet. Click **More info** → **Run anyway**.
 
 The first start downloads a small search model (about 90 MB) in the
-background; you can carry on while it does.
+background, so be online the first time; you can carry on while it does.
+After that the app works offline.
+
+To remove the app later, delete the Loci folder and
+`%LOCALAPPDATA%\Loci` (your workspaces and copies of documents).
 
 Your documents stay on your computer. Nothing is uploaded.
 
