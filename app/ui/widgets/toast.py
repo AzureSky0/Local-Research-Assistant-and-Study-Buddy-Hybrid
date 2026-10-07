@@ -51,6 +51,9 @@ class Toast(QWidget):
 
         self._callback: Callable[[], None] | None = None
 
+        # Space kept free below the toast (for the status pill).
+        self.bottom_offset = MARGIN
+
         host.installEventFilter(self)
         self.hide()
 
@@ -87,7 +90,7 @@ class Toast(QWidget):
         if host is not None:
             self.move(
                 host.width() - self.width() - MARGIN,
-                host.height() - self.height() - MARGIN,
+                host.height() - self.height() - self.bottom_offset,
             )
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:

@@ -70,6 +70,7 @@ class EmbeddingManager(QObject):
         self._handle: TaskHandle | None = None
         self._more_work = False
         self._stopping = False
+        self._paused = False
         self._unavailable_message: str | None = None
 
         self._progress_reported.connect(self._on_progress)
@@ -115,6 +116,10 @@ class EmbeddingManager(QObject):
         if self._stopping:
             return
 
+        if self._paused:
+            self._more_work = True
+            return
+
         if self._handle is not None:
             self._more_work = True
             return
@@ -124,6 +129,25 @@ class EmbeddingManager(QObject):
             progress_callback=self._progress_reported.emit,
         )
         self._handle.add_done_callback(self._run_finished.emit)
+
+    @property
+    def is_paused(self) -> bool:
+        return self._paused
+
+    def pause(self) -> None:
+        """Stop after the current step; work already done is kept and resumes later."""
+        self._paused = True
+
+        if self._handle is not None:
+            self._handle.cancel()
+            self._more_work = True
+
+    def resume(self) -> None:
+        if not self._paused:
+            return
+
+        self._paused = False
+        self.start()
 
     def set_profile(self, profile: ComputerProfile | None) -> None:
         """Choose a profile (None = automatic). Rebuilds the index if the model changes."""
@@ -186,7 +210,7 @@ class EmbeddingManager(QObject):
                 return
             logger.error("Embedding run failed: %s", result.error)
 
-        if self._stopping:
+        if self._stopping or self._paused:
             return
 
         # The model may have been downloaded by this run (e.g. back online).

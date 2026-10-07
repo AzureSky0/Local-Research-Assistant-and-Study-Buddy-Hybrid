@@ -9,6 +9,7 @@ from app.core.paths import DATA_DIR, ensure_app_directories
 from app.core.tasks.async_task_executor import AsyncTaskExecutor
 from app.database.init_db import initialize_database
 from app.ui.managers.activity_manager import ActivityManager
+from app.ui.managers.background_manager import BackgroundManager
 from app.ui.managers.embedding_manager import EmbeddingManager
 from app.ui.managers.library_manager import LibraryManager
 from app.ui.managers.processing_manager import ProcessingManager
@@ -52,12 +53,17 @@ def main() -> None:
     app.aboutToQuit.connect(processing.shutdown)
     app.aboutToQuit.connect(embedding.shutdown)
 
-    window = MainWindow(workspaces, library, activity, processing, embedding)
+    # Watches the computer and pauses background work when memory runs low.
+    background = BackgroundManager(activity, processing, embedding)
+    app.aboutToQuit.connect(background.stop)
+
+    window = MainWindow(workspaces, library, activity, processing, embedding, background)
     window.show()
 
     # Resume anything left unfinished last time.
     processing.recover_and_start()
     embedding.start()
+    background.start()
 
     sys.exit(app.exec())
 

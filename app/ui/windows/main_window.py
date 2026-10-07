@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QMainWindow, QMessageBox, QStackedWidget
 from app.documents.dto.document_import_result import DocumentImportStatus
 from app.ui.formatting import plural
 from app.ui.managers.activity_manager import ActivityManager, ActivityState, ImportActivity
+from app.ui.managers.background_manager import BackgroundManager
 from app.ui.managers.embedding_manager import EmbeddingManager
 from app.ui.managers.library_manager import LibraryManager
 from app.ui.managers.processing_manager import ProcessingManager
@@ -13,6 +14,7 @@ from app.ui.managers.workspace_manager import WorkspaceManager
 from app.ui.pages.home_page import HomePage
 from app.ui.pages.settings_page import SettingsPage
 from app.ui.theme import tokens as t
+from app.ui.widgets.status_pill import StatusPanel, StatusPill
 from app.ui.widgets.toast import Toast
 from app.ui.windows.workspace_view import WorkspaceView
 from app.workspace.domain.workspace import Workspace
@@ -28,6 +30,7 @@ class MainWindow(QMainWindow):
         activity: ActivityManager,
         processing: ProcessingManager,
         embedding: EmbeddingManager,
+        background: BackgroundManager | None = None,
     ) -> None:
         super().__init__()
         self._workspaces = workspaces
@@ -49,6 +52,20 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self._stack)
 
         self.toast = Toast(self._stack)
+
+        # Background work and computer health, bottom right (Decision 033).
+        self.status_pill = StatusPill(self._stack)
+        self.status_panel = StatusPanel(self, embedding.profile)
+        self.toast.bottom_offset = 16 + 32 + 12  # above the pill
+
+        if background is not None:
+            background.status_changed.connect(self.status_pill.show_status)
+            background.status_changed.connect(self.status_panel.show_status)
+            self.status_pill.clicked.connect(lambda: self.status_panel.show_above(self.status_pill))
+            self.status_panel.pause_requested.connect(background.pause)
+            self.status_panel.resume_requested.connect(background.resume)
+        else:
+            self.status_pill.hide()
 
         self.home_page.settings_requested.connect(self._show_settings)
         self.workspace_view.settings_requested.connect(self._show_settings)

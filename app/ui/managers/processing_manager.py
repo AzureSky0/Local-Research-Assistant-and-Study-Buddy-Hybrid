@@ -41,6 +41,7 @@ class ProcessingManager(QObject):
         self._handle: TaskHandle | None = None
         self._more_work = False
         self._stopping = False
+        self._paused = False
 
         self._document_changed.connect(self.document_updated)
         self._run_finished.connect(self._on_run_finished)
@@ -61,6 +62,10 @@ class ProcessingManager(QObject):
         if self._stopping:
             return
 
+        if self._paused:
+            self._more_work = True
+            return
+
         if self._handle is not None:
             # The running task reads new documents as well; this flag only
             # covers documents added just as it was finishing.
@@ -75,6 +80,25 @@ class ProcessingManager(QObject):
 
         self._handle = self._executor.submit(task)
         self._handle.add_done_callback(self._run_finished.emit)
+
+    @property
+    def is_paused(self) -> bool:
+        return self._paused
+
+    def pause(self) -> None:
+        """Stop after the current step; work already done is kept and resumes later."""
+        self._paused = True
+
+        if self._handle is not None:
+            self._handle.cancel()
+            self._more_work = True
+
+    def resume(self) -> None:
+        if not self._paused:
+            return
+
+        self._paused = False
+        self.start()
 
     def retry(self, document_id: str) -> Document | None:
         """Read a failed document again."""
@@ -99,7 +123,7 @@ class ProcessingManager(QObject):
     def _on_run_finished(self, result: TaskResult) -> None:
         self._handle = None
 
-        if self._stopping:
+        if self._stopping or self._paused:
             return
 
         if self._more_work or self._has_pending():
