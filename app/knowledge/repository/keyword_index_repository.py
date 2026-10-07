@@ -51,12 +51,15 @@ class KeywordIndexRepository:
         match_query: str,
         limit: int,
         per_document: int,
-    ) -> list[PassageMatch]:
+    ) -> tuple[list[PassageMatch], int, int]:
         """Return the best pages of a workspace, grouped by document.
 
         At most `per_document` pages are returned for each document, so
         one long book cannot push every other document out of the
         results. Documents are ordered by their best page.
+
+        Also returns how many pages and documents match in total; they
+        are counted from the same match, so the index is searched once.
         """
 
         # FTS5 functions cannot be used inside window functions, so the
@@ -81,7 +84,9 @@ class KeywordIndexRepository:
                     FROM hits
                 )
                 SELECT r.id, r.document_id, d.file_name, d.file_type,
-                       r.page_number, r.score, r.pages_in_document
+                       r.page_number, r.score, r.pages_in_document,
+                       (SELECT count(*) FROM hits) AS total_pages,
+                       (SELECT count(DISTINCT document_id) FROM hits) AS total_documents
                 FROM ranked AS r
                 JOIN documents AS d ON d.id = r.document_id
                 WHERE r.rank_in_document <= :per_document
@@ -99,7 +104,10 @@ class KeywordIndexRepository:
 
         snippets = self._snippets(match_query, [row[0] for row in rows])
 
-        return [
+        total_pages = int(rows[0][7]) if rows else 0
+        total_documents = int(rows[0][8]) if rows else 0
+
+        passages = [
             PassageMatch(
                 document_id=row[1],
                 file_name=row[2],
@@ -111,6 +119,8 @@ class KeywordIndexRepository:
             )
             for row in rows
         ]
+
+        return passages, total_pages, total_documents
 
     def _snippets(self, match_query: str, row_ids: list[int]) -> dict[int, str]:
         """Highlighted snippets, made only for the pages that are shown."""
@@ -143,20 +153,3 @@ class KeywordIndexRepository:
         )
 
         return {int(row[0]): row[1] for row in rows}
-
-    def count(self, workspace_id: str, match_query: str) -> tuple[int, int]:
-        """Number of matching pages and documents in a workspace."""
-        row = self._session.execute(
-            text(
-                f"""
-                SELECT count(*), count(DISTINCT s.document_id)
-                FROM {KEYWORD_INDEX_TABLE} AS s
-                JOIN documents AS d ON d.id = s.document_id
-                WHERE {KEYWORD_INDEX_TABLE} MATCH :query
-                  AND d.workspace_id = :workspace_id
-                """
-            ),
-            {"query": match_query, "workspace_id": workspace_id},
-        ).one()
-
-        return int(row[0]), int(row[1])

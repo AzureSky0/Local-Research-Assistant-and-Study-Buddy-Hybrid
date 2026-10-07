@@ -41,6 +41,8 @@ class SearchResults:
     match_mode: str = "all"
     # True when a short search found no page with every word and was widened.
     widened: bool = False
+    # True when the search had only common words ("the"), so pages were not searched.
+    too_common: bool = False
 
     @property
     def is_empty(self) -> bool:

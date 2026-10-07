@@ -223,7 +223,7 @@ def test_one_long_document_does_not_hide_others(
     [
         ("which optimizer uses moving averages", '("optimizer" OR "moving" OR "averages"*)'),
         ('"learning rate" for the optimizer', '"learning rate" AND "optimizer"*'),
-        ("the and of", '("the" OR "and" OR "of"*)'),
+        ("the and of", '("the" OR "and" OR "of")'),
     ],
 )
 def test_build_any_word_query(typed: str, expected: str) -> None:
@@ -295,3 +295,23 @@ def test_quoted_phrase_stays_required_in_questions(
     results = search.search(workspace_id, '"learning rate" warmup cosine decay schedule')
 
     assert [p.file_name for p in results.passages] == ["a.pdf"]
+
+
+def test_very_short_partial_words_are_not_prefixes() -> None:
+    assert build_match_query("th") == '"th"'
+    assert build_match_query("the") == '"the"*'
+    assert build_match_query("gradient de") == '"gradient" "de"'
+
+
+def test_searches_of_only_common_words_skip_pages(
+    session: Session, workspace_id: str, search: KeywordSearchService
+) -> None:
+    add_document(session, workspace_id, "the.pdf", ["the of and which"])
+
+    results = search.search(workspace_id, "the which")
+
+    assert results.too_common
+    assert results.passages == []
+    # File names are still searched.
+    assert [m.file_name for m in results.name_matches] == []
+    assert [m.file_name for m in search.search(workspace_id, "the").name_matches] == ["the.pdf"]

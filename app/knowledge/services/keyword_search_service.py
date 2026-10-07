@@ -57,7 +57,15 @@ class KeywordSearchService:
             for document in self._documents.find_by_name(workspace_id, query, MAX_NAME_MATCHES)
         ]
 
-        mode = choose_mode(parse_query(query))
+        parsed = parse_query(query)
+
+        # Words like "the" appear on nearly every page: searching them is
+        # slow and finds nothing useful.
+        if parsed.only_common_words:
+            results.too_common = True
+            return results
+
+        mode = choose_mode(parsed)
         self._search_passages(results, workspace_id, query, mode, limit)
 
         # A short search that no page fully matches: show the closest pages.
@@ -81,13 +89,13 @@ class KeywordSearchService:
             return
 
         results.match_mode = mode.value
-        results.passages = self._index.search(
+        (
+            results.passages,
+            results.total_passages,
+            results.total_documents,
+        ) = self._index.search(
             workspace_id,
             match_query,
             limit,
             PASSAGES_PER_DOCUMENT,
-        )
-        results.total_passages, results.total_documents = self._index.count(
-            workspace_id,
-            match_query,
         )

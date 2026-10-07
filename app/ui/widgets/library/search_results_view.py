@@ -288,7 +288,11 @@ class SearchResultsView(QWidget):
             self._summary.setText(" · ".join(parts))
 
         notes = []
-        if results.widened:
+        if results.too_common:
+            notes.append(
+                "Words like these appear on almost every page — add a more specific word."
+            )
+        elif results.widened:
             notes.append(
                 "No page contains all your words — showing the closest matches."
             )

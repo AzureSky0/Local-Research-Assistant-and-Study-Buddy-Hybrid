@@ -13,6 +13,10 @@ _WORD = re.compile(r"\w+", re.UNICODE)
 # Searches with more meaningful words than this are treated as questions.
 SHORT_QUERY_WORDS = 3
 
+# Shorter partial words would match thousands of terms ("th*"), which is
+# slow and not useful.
+MIN_PREFIX_LENGTH = 3
+
 # Common English words that say little about what a page is about.
 # Only dropped when matching "any" word; phrases keep every word.
 STOP_WORDS = frozenset(
@@ -48,6 +52,11 @@ class ParsedQuery:
     def is_empty(self) -> bool:
         return not self.phrases and not self.words
 
+    @property
+    def only_common_words(self) -> bool:
+        """True for searches like "the" or "which of": they match almost every page."""
+        return not self.phrases and bool(self.words) and self.meaningful_word_count == 0
+
 
 def parse_query(text: str) -> ParsedQuery:
     phrases: list[list[str]] = []
@@ -67,7 +76,11 @@ def parse_query(text: str) -> ParsedQuery:
             words.extend(found)
             last_is_open_word = bool(found)
 
-    open_word = last_is_open_word and not text.endswith((" ", "\t", "\n"))
+    open_word = (
+        last_is_open_word
+        and not text.endswith((" ", "\t", "\n"))
+        and len(words[-1]) >= MIN_PREFIX_LENGTH
+    )
     return ParsedQuery(phrases, words, open_word)
 
 
