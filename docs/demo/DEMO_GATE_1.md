@@ -18,7 +18,7 @@ what we need to hear.
 You need Python 3.12 and git.
 
 ```powershell
-git clone --branch feature/v0.3-knowledge-engine https://github.com/AzureSky0/Local-Research-Assistant-and-Study-Buddy-Hybrid.git
+git clone https://github.com/AzureSky0/Local-Research-Assistant-and-Study-Buddy-Hybrid.git
 cd Local-Research-Assistant-and-Study-Buddy-Hybrid
 python -m venv .venv
 .venv\Scripts\activate
