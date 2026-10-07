@@ -69,3 +69,18 @@ def test_count_going_backwards_starts_again() -> None:
     pace.record(0)
 
     assert pace.seconds_left(10) is None
+
+
+def test_waiting_before_the_first_progress_is_not_counted() -> None:
+    clock = Clock()
+    pace = RateEstimator(clock=clock)
+
+    # 30 s of waiting (a model download), then 10 per second.
+    for second in range(0, 31, 5):
+        clock.now = second
+        pace.record(0)
+    for step in range(1, 5):
+        clock.now = 30 + step * 5
+        pace.record(step * 50)
+
+    assert pace.seconds_left(100) == 10

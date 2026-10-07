@@ -34,6 +34,11 @@ class RateEstimator:
         if self._samples and finished < self._samples[-1][1]:
             self._samples.clear()
 
+        # Measure from the first progress: waiting before it (for example
+        # while a model downloads) is not the pace of the work.
+        if self._samples and self._samples[0][1] == finished:
+            self._samples.clear()
+
         self._samples.append((now, finished))
         while len(self._samples) > 2 and now - self._samples[1][0] >= self._window:
             self._samples.popleft()
