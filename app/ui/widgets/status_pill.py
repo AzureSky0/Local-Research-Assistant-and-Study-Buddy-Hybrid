@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 
 from app.core.computer_profile import ComputerProfile
 from app.core.system_monitor import Health
-from app.ui.formatting import plural
+from app.ui.formatting import format_time_left, plural
 from app.ui.managers.background_manager import BackgroundStatus, PauseReason
 from app.ui.theme import tokens as t
 from app.ui.widgets.common import button, hbox, label
@@ -34,6 +34,13 @@ PROFILE_CAPABILITY = {
     ComputerProfile.STANDARD: "Comfortable for search by meaning and, later, local AI models up to about 8B.",
     ComputerProfile.LIGHT: "Fast search; later, small local AI models (about 1–3B).",
 }
+
+
+def time_left(seconds: float | None, paused: bool) -> str:
+    """The estimate shown next to a job, for example ' · about 6 minutes left'."""
+    if paused:
+        return ""
+    return f" · {format_time_left(seconds)}" if seconds is not None else " · estimating time left…"
 
 
 def describe(status: BackgroundStatus) -> tuple[str, str]:
@@ -162,7 +169,7 @@ class StatusPanel(QFrame):
         self._jobs = label("", wrap=True)
         self._meaning_bar = QProgressBar()
         self._meaning_bar.setTextVisible(False)
-        self._meaning_label = label("", "small")
+        self._meaning_label = label("", "small", wrap=True)
         self._note = label("", "small", wrap=True)
 
         self._pause_button = button("Pause background work", None, size="small")
@@ -205,9 +212,15 @@ class StatusPanel(QFrame):
 
         jobs = []
         if status.imports_running:
-            jobs.append(f"Adding files: {plural(status.imports_running, 'import')} running")
+            jobs.append(
+                f"Adding files: {plural(status.imports_running, 'import')} running"
+                + time_left(status.imports_seconds_left, paused=False)
+            )
         if status.documents_to_read:
-            jobs.append(f"Reading: {plural(status.documents_to_read, 'document')} to go")
+            jobs.append(
+                f"Reading: {plural(status.documents_to_read, 'document')} to go"
+                + time_left(status.reading_seconds_left, self._paused)
+            )
         self._jobs.setText("\n".join(jobs) if jobs else "Nothing waiting to be read.")
 
         meaning_open = status.meaning_total > 0 and not status.meaning_unavailable
@@ -218,9 +231,11 @@ class StatusPanel(QFrame):
             self._meaning_bar.setRange(0, status.meaning_total)
             self._meaning_bar.setValue(status.meaning_done)
             percent = status.meaning_done * 100 // status.meaning_total
+            remaining = status.meaning_done < status.meaning_total
             self._meaning_label.setText(
                 f"Search by meaning (all workspaces): {status.meaning_done:,} of "
                 f"{status.meaning_total:,} passages ({percent}%)"
+                + (time_left(status.meaning_seconds_left, self._paused) if remaining else "")
             )
         else:
             self._meaning_label.setText("Search by meaning: nothing to prepare yet")

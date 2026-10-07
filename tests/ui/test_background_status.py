@@ -191,3 +191,41 @@ def test_pill_is_wide_enough_for_its_text(qapp: QApplication) -> None:
     assert pill.width() >= text_width + 10 + 8  # dot and spacing
     assert pill.geometry().right() <= host.width()
 
+
+def test_panel_shows_time_left(qapp: QApplication) -> None:
+    from PySide6.QtWidgets import QWidget
+
+    from app.core.computer_profile import ComputerProfile
+    from app.ui.widgets.status_pill import StatusPanel
+
+    host = QWidget()
+    panel = StatusPanel(host, ComputerProfile.STANDARD)
+
+    panel.show_status(
+        status(
+            documents_to_read=3,
+            reading_seconds_left=90,
+            meaning_done=40,
+            meaning_total=100,
+            meaning_seconds_left=360,
+        )
+    )
+    assert "about 2 minutes left" in panel._jobs.text()
+    assert "about 6 minutes left" in panel._meaning_label.text()
+
+    # Not enough measured yet.
+    panel.show_status(status(meaning_done=40, meaning_total=100))
+    assert "estimating time left" in panel._meaning_label.text()
+
+    # No estimate while paused, and none once finished.
+    panel.show_status(
+        status(
+            pause_reason=PauseReason.USER,
+            meaning_done=40,
+            meaning_total=100,
+            meaning_seconds_left=360,
+        )
+    )
+    assert "left" not in panel._meaning_label.text()
+    panel.show_status(status())
+    assert "left" not in panel._meaning_label.text()

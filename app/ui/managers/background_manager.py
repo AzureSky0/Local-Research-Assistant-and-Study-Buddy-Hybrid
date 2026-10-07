@@ -8,6 +8,7 @@ from enum import StrEnum
 from PySide6.QtCore import QObject, QTimer, Signal
 from sqlalchemy.orm import Session
 
+from app.core.rate_estimator import RateEstimator
 from app.core.system_monitor import (
     RECOVERED_MEMORY_MB,
     Health,
@@ -46,6 +47,10 @@ class BackgroundStatus:
     meaning_done: int
     meaning_total: int
     meaning_unavailable: bool
+    # Estimates; None until there is enough progress to judge the pace.
+    imports_seconds_left: float | None = None
+    reading_seconds_left: float | None = None
+    meaning_seconds_left: float | None = None
 
     @property
     def is_idle(self) -> bool:
@@ -85,6 +90,11 @@ class BackgroundManager(QObject):
         self._user_paused = False
         self._memory_paused = False
         self._status: BackgroundStatus | None = None
+
+        self._reading_pace = RateEstimator()
+        self._documents_read = 0
+        self._last_documents_to_read: int | None = None
+        self._meaning_pace = RateEstimator()
 
         self._timer = QTimer(self)
         self._timer.setInterval(REFRESH_MILLISECONDS)
@@ -139,20 +149,61 @@ class BackgroundManager(QObject):
             self._apply_pause()
 
         meaning_done, meaning_total = self._embedding.progress()
+        documents_to_read = self._documents_to_read()
+        imports_seconds_left, reading_seconds_left, meaning_seconds_left = self._estimate(
+            documents_to_read, meaning_done, meaning_total
+        )
 
         self._status = BackgroundStatus(
             snapshot=snapshot,
             health=health,
             pause_reason=self.pause_reason,
             imports_running=self._activity.running_count,
-            documents_to_read=self._documents_to_read(),
+            documents_to_read=documents_to_read,
             meaning_done=meaning_done,
             meaning_total=meaning_total,
             meaning_unavailable=self._embedding.unavailable_message is not None,
+            imports_seconds_left=imports_seconds_left,
+            reading_seconds_left=reading_seconds_left,
+            meaning_seconds_left=meaning_seconds_left,
         )
         self.status_changed.emit(self._status)
 
+    def _estimate(
+        self, documents_to_read: int, meaning_done: int, meaning_total: int
+    ) -> tuple[float | None, float | None, float | None]:
+        imports = [a.seconds_left for a in self._activity.activities if a.is_running]
+        imports_seconds_left = max((s for s in imports if s is not None), default=None)
+
+        # New imports add documents to read, so count the finished ones.
+        if self._last_documents_to_read is not None:
+            self._documents_read += max(0, self._last_documents_to_read - documents_to_read)
+        self._last_documents_to_read = documents_to_read
+
+        if self.pause_reason is not PauseReason.NONE:
+            return imports_seconds_left, None, None
+
+        # Idle time would make the next batch look slower than it is.
+        for pace, finished, remaining in (
+            (self._reading_pace, self._documents_read, documents_to_read),
+            (self._meaning_pace, meaning_done, meaning_total - meaning_done),
+        ):
+            if remaining > 0:
+                pace.record(finished)
+            else:
+                pace.reset()
+
+        return (
+            imports_seconds_left,
+            self._reading_pace.seconds_left(documents_to_read),
+            self._meaning_pace.seconds_left(meaning_total - meaning_done),
+        )
+
     def _apply_pause(self) -> None:
+        # Time spent paused says nothing about the pace.
+        self._reading_pace.reset()
+        self._meaning_pace.reset()
+
         if self.pause_reason is PauseReason.NONE:
             self._processing.resume()
             self._embedding.resume()
