@@ -1,221 +1,139 @@
 # Local Research Assistant + Study Buddy Hybrid
 
-A desktop AI application for interacting with personal study materials, research papers, notes, and PDFs using Retrieval Augmented Generation (RAG).
+A desktop app for working with a large collection of your own documents
+(papers, books, notes) — entirely on your computer. Import documents into
+workspaces, then find anything in them by words or by meaning, and jump
+straight to the right page.
 
-The project combines two major workflows:
-
-* **Research Assistant** — ask questions about your documents and receive answers with citations.
-* **Study Buddy** — generate summaries, flashcards, quizzes, and revision material from imported content.
-
----
-
-# Project Status
-
-🚧 Early Development
-
-Current Phase:
-
-* Project setup
-* Architecture planning
-* Environment preparation
+Everything runs locally: your documents never leave your computer, and
+after a one-time model download the app works offline.
 
 ---
 
-# Project Vision
+# Status
 
-Students and researchers repeatedly upload the same documents to online AI tools.
+**v0.3 — Knowledge Engine (complete). Now at Demo Gate 1:** feature work is
+paused while we collect feedback on the document workflow. See
+[docs/demo/DEMO_GATE_1.md](docs/demo/DEMO_GATE_1.md).
 
-This project aims to create a local knowledge workspace where users can:
+What works today:
 
-* Import documents once.
-* Search and chat with them anytime.
-* Generate study material automatically.
-* Build a searchable personal knowledge base.
+* **Workspaces** — keep separate collections (one per course, project or
+  book). The same file can be added to more than one workspace.
+* **Import** — add files or whole folders (PDF, `.txt`, `.md`); duplicates
+  within a workspace are detected; progress and time left are shown.
+* **Reading in the background** — text is extracted page by page and
+  indexed; you can keep working while it runs, and it resumes after a
+  restart.
+* **Search** — by words (fast, even with hundreds of documents) and by
+  meaning (finds passages that say the same thing in other words). Results
+  show the page and a highlighted excerpt; open a document at that page.
+* **Status** — the bottom-right indicator shows background work, time
+  left, and how busy the computer is; pause and resume at any time. Work
+  pauses on its own when memory runs low.
+* **Computer profile** — the app picks lighter or stronger local models
+  for your computer automatically (Settings → This computer).
 
-The goal is to reduce friction while studying and researching.
+Coming next (v0.4): an **Ask** section where a local AI model answers
+questions from your documents, checks each claim against its source, and
+cites the pages.
 
----
-
-# Learning Project Declaration
-
-This project is intentionally designed as a learning project.
-
-Development decisions prioritize:
-
-1. Understanding over speed.
-2. Simplicity over optimization.
-3. Readability over cleverness.
-4. Modular design over shortcuts.
-
-Every subsystem should be understandable and explainable by the developer.
-
-No component should be treated as a black box.
-
----
-
-# Planned Features
-
-## Research Mode
-
-* Document import
-* Question answering
-* Source citations
-* Cross-document comparison
-* Topic summaries
-
-## Study Mode
-
-* Flashcard generation
-* MCQ generation
-* Revision summaries
-* Key concept extraction
-* Short answer questions
+Not yet supported: scanned PDFs (no OCR), Word files, cloud sync.
 
 ---
 
-# MVP Scope
+# Running the app
 
-Included:
+Requirements: Windows 10/11 (macOS and Linux should work but are untested),
+Python **3.12**, about 1 GB of free disk space, 8 GB RAM recommended.
 
-* PDF import
-* DOCX import
-* Semantic search
-* RAG-based question answering
-* Flashcard generation
-* Summary generation
+```powershell
+git clone https://github.com/AzureSky0/Local-Research-Assistant-and-Study-Buddy-Hybrid.git
+cd Local-Research-Assistant-and-Study-Buddy-Hybrid
 
-Excluded from MVP:
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
 
-* Cloud synchronization
-* User accounts
-* Collaboration features
-* Mobile applications
-* Local LLM execution
-* OCR for handwritten notes
+python -m main
+```
 
----
+On first use the app downloads its search-by-meaning model (about 90 MB)
+in the background. Search by words works immediately; search by meaning
+starts once the model is ready. After that, no internet is needed.
 
-# Architecture Overview
+Your data (database, copies of imported documents, logs, models) is kept in
+the per-user app data folder — `%LOCALAPPDATA%\LocalResearchAssistant` on
+Windows. To use a different folder (for example to try the app without
+touching your real data), set `LRA_DATA_DIR` before starting:
 
-Documents
-→ Document Processing
-→ Chunking
-→ Embeddings
-→ Vector Database
-→ Retrieval Engine
-→ Prompt Construction
-→ LLM Response
-→ User Interface
+```powershell
+$env:LRA_DATA_DIR = "D:\lra-test-data"
+python -m main
+```
 
 ---
 
-# Planned Technology Stack
+# Development
 
-| Layer               | Technology             |
-| ------------------- | ---------------------- |
-| UI                  | PySide6                |
-| Language            | Python 3.12            |
-| Document Processing | PyMuPDF, python-docx   |
-| Embeddings          | sentence-transformers  |
-| Vector Database     | ChromaDB               |
-| Database            | SQLite                 |
-| LLM Provider        | OpenAI-compatible APIs |
-| Testing             | pytest                 |
-| Formatting          | black                  |
-| Linting             | ruff                   |
-| Type Checking       | mypy                   |
+```powershell
+pytest            # all tests (UI tests run headless)
+ruff check app tests
+mypy app
+```
 
----
+Database changes go through Alembic migrations (`app/database/migrations`);
+the app upgrades the database automatically on start.
 
-# Development Roadmap
+The search benchmark (358 arXiv papers, 45 questions) lives in
+`scripts/benchmark/` and is how model and search choices were made.
 
-## Phase 0
+## How it is built
 
-Research and architecture planning.
+```text
+UI (PySide6 pages and widgets)
+  → Managers (Qt objects; run work in the background, report progress)
+    → Services (application logic; own the transactions)
+      → Repositories (database access)
+```
 
-## Phase 1
+```text
+Import → copy + checksum → extract text per page → keyword index (SQLite FTS5)
+       → split into passages → embed (fastembed / ONNX) → vector index (sqlite-vec)
+Search → words (FTS5, bm25) + meaning (nearest passages) → combined ranking
+       → only pages that actually support the search are shown
+```
 
-Desktop application foundation.
-
-## Phase 2
-
-Document import and processing.
-
-## Phase 3
-
-Embeddings and semantic retrieval.
-
-## Phase 4
-
-Research assistant functionality.
-
-## Phase 5
-
-Study buddy functionality.
-
-## Phase 6
-
-Packaging and Microsoft Store release.
-
----
-
-# Repository Structure
+| Layer             | Technology                                   |
+| ----------------- | -------------------------------------------- |
+| UI                | PySide6 (Qt 6)                               |
+| Language          | Python 3.12                                  |
+| Database          | SQLite (WAL) + SQLAlchemy 2 + Alembic        |
+| Text extraction   | PyMuPDF                                      |
+| Search by words   | SQLite FTS5                                  |
+| Search by meaning | fastembed (arctic-embed-xs) + sqlite-vec     |
+| Quality           | pytest, ruff, mypy                           |
 
 ```text
 app/
-├── core/         # settings, paths, background task framework
+├── core/         # settings, paths, background tasks, computer profile, system monitor
 ├── database/     # engine, sessions, Alembic migrations
-├── documents/    # document import and storage
-├── workspace/    # workspace management
-├── knowledge/    # (planned) knowledge base
-├── study/        # (planned) study tools
-└── ui/           # PySide6 windows, pages, widgets
+├── documents/    # import, storage, text extraction, processing pipeline
+├── workspace/    # workspaces
+├── knowledge/    # keyword index, passages, embeddings, search
+└── ui/           # windows, pages, widgets, managers
 
-tests/            # mirrors the app/ feature folders
+tests/            # mirrors the app/ folders
+scripts/benchmark # search benchmark
 ```
 
-Application data (database, logs, cache) is stored in the per-user app data folder
-(`%LOCALAPPDATA%\LocalResearchAssistant` on Windows). Set the `LRA_DATA_DIR`
-environment variable to use a different folder, for example during development.
-
-Each feature folder follows the same layers:
-
-```text
-domain/  dto/  mapper/  orm/  repository/  services/
-```
+Each feature folder uses the same layers:
+`domain/  dto/  mapper/  orm/  repository/  services/`.
 
 ---
 
-# Success Criteria
+# Learning project
 
-The project succeeds if:
-
-* The developer understands every subsystem.
-* The architecture can be explained in interviews.
-* The application solves a real problem.
-* The application reaches production quality.
-* The application is released publicly.
-
-Revenue is desirable but not required for project success.
-
-The primary product is not the software.
-
-The primary product is the developer skill gained while building it.
-
----
-
-# License
-
-License selection pending.
-
----
-
-# Author
-
-Developed as a personal learning project focused on:
-
-* Desktop application development
-* Retrieval Augmented Generation (RAG)
-* Vector databases
-* AI application architecture
-* Software engineering best practices
+This is intentionally a learning project: understanding over speed,
+simplicity over optimization, readability over cleverness. Every subsystem
+should be explainable by its developer — no black boxes.
