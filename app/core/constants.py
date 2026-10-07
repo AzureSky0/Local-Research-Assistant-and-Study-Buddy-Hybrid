@@ -1,3 +1,4 @@
+# Working name; the final product name comes later (Decision 041).
 APP_NAME = "Loci"
 APP_VERSION = "0.3.0"
 

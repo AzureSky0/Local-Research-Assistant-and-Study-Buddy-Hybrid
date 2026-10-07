@@ -135,9 +135,10 @@ Each feature folder uses the same layers:
 
 # Name
 
-*Loci* (Latin for "places") comes from the method of loci — the memory
-palace, where knowledge is remembered by the place it is kept. Workspaces
-are the rooms; every answer points back to its place: the page.
+*Loci* is a working name. It comes from the method of loci — the memory
+palace, where knowledge is remembered by the place it is kept: workspaces
+are the rooms, and every answer points back to its place, the page. A
+final product name will follow.
 
 The repository keeps its original name, Local Research Assistant + Study
 Buddy Hybrid.
