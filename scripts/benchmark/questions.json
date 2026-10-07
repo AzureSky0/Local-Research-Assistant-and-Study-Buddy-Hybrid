@@ -1,0 +1,202 @@
+[
+  {
+    "question": "Which optimizer keeps exponentially decaying averages of past gradients and squared gradients, with a bias correction?",
+    "answer": "1412.6980"
+  },
+  {
+    "question": "How can very deep networks be trained by letting layers learn residual functions through identity shortcut connections?",
+    "answer": "1512.03385"
+  },
+  {
+    "question": "A translation model that drops recurrence and convolutions entirely and relies only on attention",
+    "answer": "1706.03762"
+  },
+  {
+    "question": "Pretraining a bidirectional encoder by predicting masked words and whether one sentence follows another",
+    "answer": "1810.04805"
+  },
+  {
+    "question": "Two networks trained in a minimax game where one creates samples and the other tries to tell real from fake",
+    "answer": "1406.2661"
+  },
+  {
+    "question": "Reparameterization trick for training latent variable models by maximizing a variational lower bound",
+    "answer": "1312.6114"
+  },
+  {
+    "question": "Learning word vectors efficiently with continuous bag-of-words and skip-gram architectures",
+    "answer": "1301.3781"
+  },
+  {
+    "question": "Reducing internal covariate shift by normalizing layer inputs over each mini-batch",
+    "answer": "1502.03167"
+  },
+  {
+    "question": "Normalizing across the features of a single example instead of across the batch, which suits recurrent networks",
+    "answer": "1607.06450"
+  },
+  {
+    "question": "A 175 billion parameter language model that performs tasks from a few examples in the prompt without fine-tuning",
+    "answer": "2005.14165"
+  },
+  {
+    "question": "Splitting an image into fixed-size patches and feeding them to a standard transformer for classification",
+    "answer": "2010.11929"
+  },
+  {
+    "question": "Fine-tuning large models by freezing the pretrained weights and injecting trainable rank decomposition matrices",
+    "answer": "2106.09685"
+  },
+  {
+    "question": "Combining a pretrained sequence-to-sequence generator with a dense retriever over Wikipedia for knowledge-intensive tasks",
+    "answer": "2005.11401"
+  },
+  {
+    "question": "Generating images by learning to reverse a gradual process that adds noise",
+    "answer": "2006.11239"
+  },
+  {
+    "question": "Learning visual concepts from natural language with contrastive image and text pairs, enabling zero-shot transfer",
+    "answer": "2103.00020"
+  },
+  {
+    "question": "Treating every language problem as converting input text to output text with a single model trained on a cleaned web crawl",
+    "answer": "1910.10683"
+  },
+  {
+    "question": "A multilayer LSTM maps the input sentence to a fixed vector and another decodes the output; reversing the source word order helps",
+    "answer": "1409.3215"
+  },
+  {
+    "question": "Letting a translation decoder softly search for the relevant parts of the source sentence instead of using one fixed-length vector",
+    "answer": "1409.0473"
+  },
+  {
+    "question": "A convolutional network with a contracting and an expanding path for biomedical image segmentation with very few training images",
+    "answer": "1505.04597"
+  },
+  {
+    "question": "Compressing an ensemble into a smaller model by training it on softened output probabilities with a high temperature",
+    "answer": "1503.02531"
+  },
+  {
+    "question": "Aligning language models with what users want using human feedback: supervised fine-tuning, a reward model, then reinforcement learning",
+    "answer": "2203.02155"
+  },
+  {
+    "question": "A policy gradient method with a clipped surrogate objective that keeps updates stable",
+    "answer": "1707.06347"
+  },
+  {
+    "question": "Learning control policies directly from raw pixels with a convolutional network trained by Q-learning and experience replay",
+    "answer": "1312.5602"
+  },
+  {
+    "question": "Prompting large models to write intermediate reasoning steps improves arithmetic and commonsense reasoning",
+    "answer": "2201.11903"
+  },
+  {
+    "question": "Semi-supervised node classification with a propagation rule derived from a first-order approximation of spectral graph convolutions",
+    "answer": "1609.02907"
+  },
+  {
+    "question": "Why does my network get a worse training error when I just add more layers, and how do I fix it?",
+    "answer": "1512.03385",
+    "style": "student"
+  },
+  {
+    "question": "How can I adapt a huge pretrained model cheaply when I have very little GPU memory?",
+    "answer": "2106.09685",
+    "style": "student"
+  },
+  {
+    "question": "A big teacher model passes what it knows to a small student model",
+    "answer": "1503.02531",
+    "style": "student"
+  },
+  {
+    "question": "Make the model show its work step by step before it answers",
+    "answer": "2201.11903",
+    "style": "student"
+  },
+  {
+    "question": "An agent that learns to play video games just from the screen and the score",
+    "answer": "1312.5602",
+    "style": "student"
+  },
+  {
+    "question": "Teaching a compact network to imitate a much larger one",
+    "answer": "1503.02531",
+    "style": "hard"
+  },
+  {
+    "question": "Adding small trainable side matrices instead of updating all of a model's weights",
+    "answer": "2106.09685",
+    "style": "hard"
+  },
+  {
+    "question": "An image generator that learns by gradually cleaning up random static",
+    "answer": "2006.11239",
+    "style": "hard"
+  },
+  {
+    "question": "Matching pictures with their captions so objects can be recognised without labelled training images",
+    "answer": "2103.00020",
+    "style": "hard"
+  },
+  {
+    "question": "A model that looks things up in an encyclopedia before writing its answer",
+    "answer": "2005.11401",
+    "style": "hard"
+  },
+  {
+    "question": "Letting signals skip over layers so that very deep stacks can still be trained",
+    "answer": "1512.03385",
+    "style": "hard"
+  },
+  {
+    "question": "An assistant that improves by learning which of its replies people prefer",
+    "answer": "2203.02155",
+    "style": "hard"
+  },
+  {
+    "question": "Cutting a picture into squares and treating each square like a word",
+    "answer": "2010.11929",
+    "style": "hard"
+  },
+  {
+    "question": "Working out what a word means from the words that usually surround it",
+    "answer": "1301.3781",
+    "style": "hard"
+  },
+  {
+    "question": "A game between a forger and a detective network",
+    "answer": "1406.2661",
+    "style": "hard"
+  },
+  {
+    "question": "A network for outlining structures in medical scans, shaped like the letter U",
+    "answer": "1505.04597",
+    "style": "hard"
+  },
+  {
+    "question": "A translator that learns where to look in the original sentence for each word it writes",
+    "answer": "1409.0473",
+    "style": "hard"
+  },
+  {
+    "question": "Keeping a learning agent stable by limiting how far its behaviour can change in one update",
+    "answer": "1707.06347",
+    "style": "hard"
+  },
+  {
+    "question": "A very large text predictor that can do a new task after seeing only a handful of demonstrations",
+    "answer": "2005.14165",
+    "style": "hard"
+  },
+  {
+    "question": "Labelling the members of a citation network using only a few known labels",
+    "answer": "1609.02907",
+    "style": "hard"
+  }
+]
