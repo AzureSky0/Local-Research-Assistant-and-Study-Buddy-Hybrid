@@ -9,7 +9,8 @@ class Settings(BaseSettings):
     app_name: str = APP_NAME
     app_version: str = APP_VERSION
 
-    debug: bool = True
+    # Detailed logs for development: set DEBUG=true in a .env file.
+    debug: bool = False
 
 
 settings = Settings()

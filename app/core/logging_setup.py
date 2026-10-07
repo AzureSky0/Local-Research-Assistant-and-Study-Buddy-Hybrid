@@ -39,5 +39,7 @@ def configure_logging(debug: bool = False) -> None:
         force=True,
     )
 
-    # SQLAlchemy is very verbose at DEBUG level.
-    logging.getLogger("sqlalchemy").setLevel(logging.WARNING)
+    # SQLAlchemy is very verbose at DEBUG level, and the model download
+    # logs every web request.
+    for noisy in ("sqlalchemy", "httpx", "httpcore", "huggingface_hub"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)

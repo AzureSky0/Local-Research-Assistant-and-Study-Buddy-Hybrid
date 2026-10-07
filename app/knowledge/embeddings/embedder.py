@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from pathlib import Path
@@ -16,6 +17,10 @@ if TYPE_CHECKING:
     from fastembed import TextEmbedding
 
 logger = logging.getLogger(__name__)
+
+# The background worker and search each load the model; on the first run
+# only one of them should download it while the other waits.
+_LOAD_LOCK = threading.Lock()
 
 
 class EmbeddingModelUnavailableError(RuntimeError):
@@ -62,7 +67,10 @@ class FastEmbedEmbedder(Embedder):
         try:
             from fastembed import TextEmbedding
 
-            self._model = TextEmbedding(model_name=self.spec.model_id, cache_dir=str(self._cache_dir))
+            with _LOAD_LOCK:
+                self._model = TextEmbedding(
+                    model_name=self.spec.model_id, cache_dir=str(self._cache_dir)
+                )
         except Exception as error:
             logger.warning("Could not load embedding model %s: %s", self.spec.model_id, error)
             raise EmbeddingModelUnavailableError(

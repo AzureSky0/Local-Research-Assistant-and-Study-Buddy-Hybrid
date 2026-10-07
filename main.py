@@ -1,5 +1,7 @@
 import logging
+import os
 import sys
+from types import TracebackType
 
 from PySide6.QtWidgets import QApplication
 
@@ -24,9 +26,31 @@ logger = logging.getLogger(__name__)
 IMPORT_WORKERS = 2
 
 
+def log_unhandled_error(
+    error_type: type[BaseException], error: BaseException, traceback: TracebackType | None
+) -> None:
+    """Write crashes to the log file: the packaged app has no console to show them."""
+    logger.critical("Unexpected error", exc_info=(error_type, error, traceback))
+
+
+def provide_missing_console_streams() -> None:
+    """The packaged app has no console, so sys.stdout and sys.stderr are None.
+
+    Libraries that print (for example the model download's progress bar)
+    would then crash; send their output nowhere instead.
+    """
+    if sys.stdout is None:
+        sys.stdout = open(os.devnull, "w", encoding="utf-8")
+    if sys.stderr is None:
+        sys.stderr = open(os.devnull, "w", encoding="utf-8")
+    os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+
+
 def main() -> None:
+    provide_missing_console_streams()
     ensure_app_directories()
     configure_logging(debug=settings.debug)
+    sys.excepthook = log_unhandled_error
 
     logger.info("Starting %s %s", settings.app_name, settings.app_version)
     logger.info("Data directory: %s", DATA_DIR)
