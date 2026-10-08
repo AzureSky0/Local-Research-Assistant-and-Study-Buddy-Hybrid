@@ -83,6 +83,10 @@ python -m main
 
 # Development
 
+**Team handbook:** [docs/team/](docs/team/README.md) — project overview,
+current status, roadmap, architecture, development guide, decisions,
+testing, releases and meeting notes.
+
 ```powershell
 pytest            # all tests (UI tests run headless)
 ruff check app tests
