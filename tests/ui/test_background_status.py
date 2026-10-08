@@ -254,3 +254,31 @@ def test_panel_lists_only_unfinished_work(qapp: QApplication) -> None:
     assert not panel._meaning_bar.isVisibleTo(panel)
     assert not panel._pause_button.isVisibleTo(panel)
     assert panel._idle.isVisibleTo(panel)
+
+
+def test_panel_never_cuts_off_wrapped_text(qapp: QApplication) -> None:
+    from PySide6.QtWidgets import QLabel, QWidget
+
+    from app.core.computer_profile import ComputerProfile
+    from app.ui.widgets.status_pill import StatusPanel
+
+    host = QWidget()
+    panel = StatusPanel(host, ComputerProfile.STANDARD)
+    panel.show_status(
+        status(
+            imports_running=1,
+            imports_seconds_left=30,
+            documents_to_read=4,
+            reading_seconds_left=50,
+            meaning_done=25,
+            meaning_total=100,
+            meaning_seconds_left=70,
+        )
+    )
+    panel.show_above(host)
+    qapp.processEvents()
+
+    for text in panel.findChildren(QLabel):
+        if text.isVisible() and text.wordWrap():
+            assert text.height() >= text.heightForWidth(text.width()), text.text()
+    panel.hide()

@@ -275,10 +275,18 @@ class StatusPanel(QFrame):
             self._cpu_bar.setValue(round(snapshot.system_cpu_percent))
             self._cpu_label.setText(f"CPU: {snapshot.system_cpu_percent:.0f}% busy")
 
-        self.adjustSize()
+        self._fit_height()
+
+    def _fit_height(self) -> None:
+        # adjustSize() measures wrapped labels before they know their width,
+        # which cut off their last line (seen at 200% display scaling).
+        layout = self.layout()
+        if layout is not None:
+            layout.activate()
+            self.setFixedHeight(layout.totalHeightForWidth(self.width()))
 
     def show_above(self, anchor: QWidget) -> None:
-        self.adjustSize()
+        self._fit_height()
         bottom_right = anchor.mapToGlobal(QPoint(anchor.width(), 0))
         self.move(bottom_right.x() - self.width(), bottom_right.y() - self.height() - 8)
         self.show()
