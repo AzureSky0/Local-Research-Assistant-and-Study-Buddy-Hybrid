@@ -410,3 +410,16 @@ def test_home_shows_document_counts_after_import(window: MainWindow, tmp_path: P
 
     card = next(c for c in window.home_page._cards if c.workspace.id == workspace.id)
     assert card.document_count == 2
+
+
+def test_settings_scrolls_instead_of_squeezing_text(window: MainWindow) -> None:
+    from PySide6.QtWidgets import QLabel
+
+    window.resize(900, 400)
+    window._show_settings()
+    window.show()
+    QApplication.processEvents()
+
+    for text in window.settings_page.findChildren(QLabel):
+        if text.isVisible() and text.wordWrap():
+            assert text.height() >= text.heightForWidth(text.width()), text.text()

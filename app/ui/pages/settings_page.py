@@ -1,7 +1,14 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QComboBox, QFrame, QMessageBox, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QComboBox,
+    QFrame,
+    QMessageBox,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
 
 from app.core.computer_profile import ComputerProfile, detect_profile, total_memory_gb
 from app.core.config import settings
@@ -66,9 +73,21 @@ class SettingsPage(QWidget):
         content_layout.setContentsMargins(48, 24, 48, 48)
         content.setLayout(content_layout)
 
-        layout = hbox(content, 1, spacing=0)
-        layout.setStretchFactor(content, 100)
-        self.setLayout(layout)
+        row = QWidget()
+        row.setObjectName("page")
+        row_layout = hbox(content, 1, spacing=0)
+        row_layout.setStretchFactor(content, 100)
+        row.setLayout(row_layout)
+
+        # Scroll instead of squeezing the cards when the window is short.
+        scroll = QScrollArea()
+        scroll.setObjectName("page")
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(row)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(scroll)
 
     # Computer profile (Decision 037) ------------------------------------------------
 
