@@ -49,7 +49,7 @@ OCR for scanned pages, more file types) come later as installable
 | **The app does the thinking** | Users should not need to understand chunks, embeddings or models. |
 | **Learning project** | Understanding over speed, simplicity over cleverness. Every part should be explainable by the people who build it — no black boxes. |
 
-## Scope today (v0.3.0)
+## Scope today (v0.3)
 
 **In:** workspaces; import of PDF, `.txt`, `.md` files and folders;
 duplicate detection; background reading with progress and time left;

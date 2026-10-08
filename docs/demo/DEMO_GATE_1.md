@@ -18,7 +18,7 @@ what we need to hear.
 You need Windows 10 or 11 and about 1 GB of free disk space. No Python or
 other software is needed.
 
-1. Download **Loci-0.3.0-windows.zip** from the
+1. Download the latest **Loci-0.3.x-windows.zip** from the
    [Releases page](https://github.com/AzureSky0/Local-Research-Assistant-and-Study-Buddy-Hybrid/releases) (about 120 MB).
 2. Right-click the zip → **Extract All…**, and choose a folder you will
    find again (for example Documents).

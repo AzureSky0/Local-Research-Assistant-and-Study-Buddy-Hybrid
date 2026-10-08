@@ -1,7 +1,7 @@
 # Project status
 
 **Updated:** 2026-10-08 · **Stage:** 🚧 Demo Gate 1 (after v0.3) ·
-**Latest release:** [v0.3.0](https://github.com/AzureSky0/Local-Research-Assistant-and-Study-Buddy-Hybrid/releases/tag/v0.3.0)
+**Latest release:** [v0.3.1](https://github.com/AzureSky0/Local-Research-Assistant-and-Study-Buddy-Hybrid/releases/tag/v0.3.1)
 
 > Update this page at least weekly and after every release. Keep the
 > history short: move old "Recently done" items into the changelog
@@ -56,7 +56,7 @@ paused** while testers try it; only fixes from their feedback go in.
 | Keyword search | < 100 ms | < 100 ms ✅ |
 | Search by meaning (vector lookup) | ~33 ms median | < 300 ms ✅ |
 | Random text finds nothing | ✅ (evidence check) | — |
-| Automated tests | 256 passing | all passing ✅ |
+| Automated tests | 259 passing | all passing ✅ |
 
 ## Known issues and technical debt
 
@@ -85,7 +85,9 @@ Good first tasks are marked ⭐.
 
 ## Changelog
 
-- **2026-10-08** — Team handbook added.
+- **2026-10-08** — v0.3.1 released: home page document counts update after
+  imports; status panel and Settings no longer cut off text at high display
+  scaling. Team handbook and public project overview (PDF) added.
 - **2026-10-07** — v0.3.0 released as a Windows zip; working name Loci;
   branches merged into `main`. Benchmark, search by meaning with hybrid
   ranking, computer profile, status indicator with time left; random

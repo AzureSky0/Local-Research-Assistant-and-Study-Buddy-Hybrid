@@ -33,7 +33,7 @@ Why it matters:
 ## 2. Live demo (10 min)
 
 **Prepare before the meeting:** install the
-[v0.3.0 release](https://github.com/AzureSky0/Local-Research-Assistant-and-Study-Buddy-Hybrid/releases/tag/v0.3.0)
+[latest release](https://github.com/AzureSky0/Local-Research-Assistant-and-Study-Buddy-Hybrid/releases/latest)
 and open it once (so the search model is downloaded); have a folder of
 10–20 PDFs ready, ideally on a topic the audience knows; close other
 heavy apps.
@@ -69,7 +69,7 @@ v0.1 ✅ ── v0.2 ✅ ── v0.3 ✅ ── 🚧 Demo Gate 1 (now) ── v0
   - all 358 papers fully searchable by meaning in about 30 minutes, in
     the background, on a normal 16 GB laptop;
   - searches answer in well under a tenth of a second.
-- **Quality:** 256 automated tests; every model and storage choice made
+- **Quality:** 259 automated tests; every model and storage choice made
   by benchmark.
 
 ## 4. What is next (5 min)

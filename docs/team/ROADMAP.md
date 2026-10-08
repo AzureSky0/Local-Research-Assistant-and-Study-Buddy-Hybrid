@@ -9,7 +9,7 @@ success test passes.
 |---|---|---|---|
 | | **v0.1 Foundation** | A stable architecture to build on | ✅ Done |
 | | **v0.2 Workspaces & Documents** | Organize documents | ✅ Done |
-| | **v0.3 Knowledge Engine** | Find anything in your documents, fast | ✅ Done (v0.3.0 released) |
+| | **v0.3 Knowledge Engine** | Find anything in your documents, fast | ✅ Done (v0.3.1 released) |
 | 🚧 | **Demo Gate 1** | Validate the document workflow | ◀ **Now** |
 | | **v0.4 AI Assistant** | Ask questions, get cited answers | Next |
 | | **v0.5 First Public Prototype** | A complete, polished first experience | |

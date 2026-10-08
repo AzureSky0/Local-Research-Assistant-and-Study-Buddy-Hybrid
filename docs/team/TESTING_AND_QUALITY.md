@@ -6,7 +6,7 @@ anything that affects search or speed, and real users at Demo Gates.
 ## 1. Automated tests (every change)
 
 ```powershell
-pytest                 # 256 tests, about 10 seconds
+pytest                 # about 260 tests, about 10 seconds
 ruff check app tests
 mypy app
 ```

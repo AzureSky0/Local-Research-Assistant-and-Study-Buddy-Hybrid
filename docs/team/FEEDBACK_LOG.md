@@ -5,15 +5,15 @@ own words where possible. Do not record personal data beyond a first
 name or initials.
 
 Guide used: [../demo/DEMO_GATE_1.md](../demo/DEMO_GATE_1.md) · Version:
-v0.3.0 · Goal: 3–5 testers who are not on the team.
+v0.3.x (note the exact version per session) · Goal: 3–5 testers who are not on the team.
 
 ## Sessions
 
-| # | Date | Tester (initials) | Role (student, researcher, …) | Documents (number, type) | RAM | Run by |
-|---|---|---|---|---|---|---|
-| 1 | | | | | | |
-| 2 | | | | | | |
-| 3 | | | | | | |
+| # | Date | Tester (initials) | Role (student, researcher, …) | Documents (number, type) | RAM | Version | Run by |
+|---|---|---|---|---|---|---|---|
+| 1 | | | | | | | |
+| 2 | | | | | | | |
+| 3 | | | | | | | |
 
 ## Ratings (1 hard – 5 easy)
 
