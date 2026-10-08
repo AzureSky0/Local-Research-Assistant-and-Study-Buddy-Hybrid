@@ -13,6 +13,7 @@ Last reviewed: 2026-10-08 · Owner: Akshat Sahu (project lead)
 | Know where we are right now and what is next | [STATUS.md](STATUS.md) |
 | See the whole plan, version by version | [ROADMAP.md](ROADMAP.md) |
 | Present the project in a meeting | [meetings/2026-10-08-project-update.md](meetings/2026-10-08-project-update.md) |
+| Share the project with anyone outside the team | [../showcase/Loci-overview.pdf](../showcase/Loci-overview.pdf) (source: `brochure.html`, rebuild with `python scripts/build_showcase_pdf.py`) |
 | Set up the code and start contributing | [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md) |
 | Understand how the app is built | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | Know why things are the way they are | [DECISIONS.md](DECISIONS.md) |

@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Loci — Project Overview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400;1,500&display=block" rel="stylesheet">
+<style>
+/* Layout: A4 pages; a memory-palace floor plan as the recurring motif; app screenshots framed as windows. */
+:root {
+  --ink: #16181D;
+  --ink-soft: #3F4452;
+  --muted: #5B6170;
+  --paper: #FFFFFF;
+  --ground: #F4F5F7;
+  --line: #E3E5EA;
+  --accent: #2F4FCB;
+  --accent-deep: #1F3699;
+  --accent-soft: #E8EDFC;
+  --teal: #1F6B5C;
+  --teal-soft: #E1F2EE;
+  --purple: #6D3FC0;
+  --purple-soft: #EFE8FB;
+  --mark: #FFE7A3;
+  --night: #121521;
+  --night-line: #2A3047;
+  --serif: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+  --sans: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+  --mono: "IBM Plex Mono", Consolas, "Courier New", monospace;
+}
+
+@page { size: A4; margin: 0; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--paper); color: var(--ink); }
+body {
+  font-family: var(--sans);
+  font-size: 10.5pt;
+  line-height: 1.55;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.page {
+  width: 210mm;
+  height: 297mm;
+  padding: 20mm 18mm 16mm;
+  position: relative;
+  overflow: hidden;
+  page-break-after: always;
+  break-after: page;
+  display: flex;
+  flex-direction: column;
+}
+.page:last-child { page-break-after: auto; break-after: auto; }
+
+/* Running footer: name, section, page number */
+.folio {
+  position: absolute;
+  left: 18mm; right: 18mm; bottom: 9mm;
+  display: flex; justify-content: space-between;
+  font-family: var(--mono); font-size: 7.5pt; color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 8pt;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 4mm;
+}
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+h2 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 27pt;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  max-width: 150mm;
+}
+h2 em { font-style: italic; color: var(--accent); }
+h3 { font-size: 11.5pt; font-weight: 600; margin-bottom: 1.5mm; }
+p { margin: 0; }
+.lede { font-size: 12pt; line-height: 1.55; color: var(--ink-soft); max-width: 150mm; margin-top: 6mm; }
+.small { font-size: 9pt; color: var(--muted); }
+
+/* App screenshots, framed as windows */
+.shot {
+  border: 1px solid var(--line);
+  border-radius: 3mm;
+  overflow: hidden;
+  background: var(--paper);
+  box-shadow: 0 2mm 6mm rgba(22, 24, 29, 0.08);
+}
+.shot img { display: block; width: 100%; }
+.caption { font-family: var(--mono); font-size: 7.5pt; color: var(--muted); margin-top: 2.5mm; }
+
+.badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 7pt;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.6mm 2mm;
+  border-radius: 1mm;
+  vertical-align: middle;
+}
+.now { background: var(--teal-soft); color: var(--teal); }
+.next { background: var(--accent-soft); color: var(--accent-deep); }
+.later { background: var(--ground); color: var(--ink-soft); border: 1px solid var(--line); }
+
+/* ---------- 1. Cover ---------- */
+.cover { background: var(--night); color: #EEF0F6; padding: 22mm 18mm 16mm; }
+.cover .folio { color: #8D94AB; }
+.cover .eyebrow { color: #9DB0FF; }
+.cover-title {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 88pt;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  margin-top: 6mm;
+}
+.cover-title span { font-style: italic; color: #9DB0FF; }
+.cover-tag { font-family: var(--serif); font-style: italic; font-size: 19pt; margin-top: 6mm; color: #DDE2F0; }
+.cover-sub { font-size: 11.5pt; color: #AEB5C8; max-width: 120mm; margin-top: 5mm; line-height: 1.55; }
+.plan { margin-top: auto; margin-bottom: 8mm; }
+.plan svg { width: 100%; height: auto; display: block; }
+.cover-meta {
+  display: flex; gap: 10mm; flex-wrap: wrap;
+  font-family: var(--mono); font-size: 8pt; color: #8D94AB;
+  border-top: 1px solid var(--night-line); padding-top: 4mm;
+}
+.cover-meta b { color: #DDE2F0; font-weight: 500; }
+
+/* ---------- 2. Problem / idea ---------- */
+.pains { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7mm; margin-top: 16mm; }
+.pain { border-top: 2px solid var(--ink); padding-top: 4mm; }
+.pain .q { font-family: var(--serif); font-style: italic; font-size: 15pt; line-height: 1.35; margin-bottom: 3mm; }
+.pain p { font-size: 10.5pt; color: var(--ink-soft); }
+.idea {
+  margin-top: auto;
+  background: var(--accent-soft);
+  border-radius: 3mm;
+  padding: 11mm 10mm;
+  display: grid; grid-template-columns: 52mm 1fr; gap: 8mm; align-items: start;
+}
+.idea .label { font-family: var(--serif); font-size: 20pt; line-height: 1.15; color: var(--accent-deep); }
+.idea ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 3.5mm; }
+.idea li { display: grid; grid-template-columns: 28mm 1fr; gap: 3mm; font-size: 10.5pt; }
+.idea li b { font-weight: 600; color: var(--accent-deep); }
+
+/* ---------- 3. How it works ---------- */
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4mm; margin-top: 10mm; }
+.step { background: var(--ground); border-radius: 2.5mm; padding: 5mm 4.5mm; min-width: 0; }
+.step .n { font-family: var(--mono); font-size: 8pt; color: var(--accent); letter-spacing: 0.08em; }
+.step h3 { margin-top: 2mm; }
+.step p { font-size: 9pt; color: var(--ink-soft); line-height: 1.5; }
+.step .badge { margin-top: 3mm; }
+.how-shot { margin-top: auto; }
+
+/* ---------- 4. Find ---------- */
+.find-main { margin-top: 8mm; }
+.notes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5mm 7mm; margin-top: 8mm; }
+.note h3 { font-size: 10.5pt; }
+.note p { font-size: 9pt; color: var(--ink-soft); }
+.note mark { background: var(--mark); padding: 0 0.6mm; }
+.nonsense { margin-top: auto; }
+
+/* ---------- 5. Laptops ---------- */
+.laptop-grid { display: grid; grid-template-columns: 78mm 1fr; gap: 9mm; margin-top: 12mm; }
+.panel-shot { border-radius: 4mm; }
+.facts { display: grid; gap: 4.5mm; align-content: start; }
+.fact { display: grid; grid-template-columns: 7mm 1fr; gap: 3mm; }
+.fact .dot { width: 3mm; height: 3mm; border-radius: 50%; background: var(--accent); margin-top: 1.8mm; }
+.fact p { font-size: 10pt; color: var(--ink-soft); }
+.facts { gap: 6mm; }
+.numbers {
+  margin-top: auto;
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+}
+.num { padding: 6mm 4mm 5mm 0; }
+.num + .num { padding-left: 5mm; border-left: 1px solid var(--line); }
+.num .v { font-family: var(--serif); font-size: 26pt; line-height: 1; font-variant-numeric: tabular-nums; }
+.num .v small { font-size: 12pt; }
+.num .l { font-size: 8.5pt; color: var(--muted); margin-top: 2.5mm; line-height: 1.4; }
+.bench { margin-top: 3mm; }
+
+/* ---------- 6. Ask (design preview) ---------- */
+.preview-tag {
+  display: inline-block; margin-top: 5mm;
+  font-family: var(--mono); font-size: 7.5pt; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--accent-deep); border: 1px dashed var(--accent); border-radius: 1mm; padding: 1mm 2.5mm;
+}
+.ask {
+  margin-top: 8mm;
+  border: 1px solid var(--line); border-radius: 3mm; overflow: hidden;
+  box-shadow: 0 2mm 6mm rgba(22, 24, 29, 0.08);
+}
+.ask-bar { background: var(--ground); border-bottom: 1px solid var(--line); padding: 3mm 5mm; font-size: 8.5pt; color: var(--muted); display: flex; justify-content: space-between; }
+.ask-body { padding: 6mm 7mm 7mm; display: grid; gap: 5mm; }
+.question { justify-self: end; background: var(--accent); color: #fff; border-radius: 3mm 3mm 0.8mm 3mm; padding: 3mm 4.5mm; font-size: 10pt; max-width: 120mm; }
+.answer { font-size: 10pt; line-height: 1.65; max-width: 150mm; }
+.answer .cite {
+  font-family: var(--mono); font-size: 7.5pt; color: var(--accent-deep);
+  background: var(--accent-soft); border-radius: 1mm; padding: 0.3mm 1.4mm; white-space: nowrap;
+}
+.checked { display: flex; gap: 2mm; align-items: center; font-size: 8.5pt; color: var(--teal); }
+.checked::before { content: ""; width: 3mm; height: 3mm; border-radius: 50%; background: var(--teal); }
+.sources { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3mm; }
+.source { border: 1px solid var(--line); border-radius: 2mm; padding: 3mm; font-size: 8pt; min-width: 0; }
+.source b { display: block; font-size: 8.5pt; margin-bottom: 1mm; }
+.source span { font-family: var(--mono); color: var(--muted); font-size: 7.5pt; }
+.not-found { border-left: 2px solid var(--line); padding-left: 4mm; color: var(--ink-soft); }
+.rules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6mm; margin-top: auto; }
+.rule h3 { font-size: 10pt; }
+.rule p { font-size: 9pt; color: var(--ink-soft); }
+
+/* ---------- 7. Features ---------- */
+.feature-table { width: 100%; border-collapse: collapse; margin-top: 7mm; font-size: 9pt; }
+.feature-table th {
+  text-align: left; font-family: var(--mono); font-weight: 500; font-size: 7.5pt;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+  padding: 0 3mm 2.5mm 0; border-bottom: 1px solid var(--ink);
+}
+.feature-table td { padding: 1.5mm 3mm 1.5mm 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+.feature-table td:first-child { font-weight: 600; width: 46mm; }
+.feature-table td:last-child { width: 18mm; text-align: right; padding-right: 0; }
+.feature-table tr.group td {
+  font-family: var(--serif); font-style: italic; font-weight: 400; font-size: 12pt;
+  color: var(--accent-deep); padding-top: 3mm; padding-bottom: 0.5mm; border-bottom: none;
+}
+.feature-table .d { color: var(--ink-soft); }
+
+/* ---------- 8. Principles, roadmap, try it ---------- */
+.principles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6mm 9mm; margin-top: 9mm; }
+.principle { display: grid; grid-template-columns: 9mm 1fr; gap: 2mm; }
+.principle .k { font-family: var(--serif); font-style: italic; font-size: 16pt; color: var(--accent); line-height: 1.1; }
+.principle p { font-size: 9pt; color: var(--ink-soft); }
+.road { margin-top: 11mm; }
+.road svg { width: 100%; height: auto; display: block; }
+.phases { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7mm; margin-top: 8mm; }
+.phases p { font-size: 9pt; color: var(--ink-soft); }
+.phases .phase-k { font-family: var(--serif); font-style: italic; font-size: 14pt; color: var(--accent-deep); margin-bottom: 1.5mm; }
+.try {
+  margin-top: auto;
+  background: var(--night); color: #EEF0F6; border-radius: 3mm;
+  padding: 8mm 9mm; display: grid; grid-template-columns: 1fr 1fr; gap: 8mm;
+}
+.try h3 { font-family: var(--serif); font-weight: 400; font-size: 17pt; margin-bottom: 3mm; }
+.try p { font-size: 9pt; color: #AEB5C8; }
+.try .link { font-family: var(--mono); font-size: 8pt; color: #B9C8FF; word-break: break-all; margin-top: 3mm; }
+.name-note { font-size: 8.5pt; color: var(--muted); margin-top: 5mm; }
+</style>
+</head>
+<body>
+
+<!-- 1 · Cover -->
+<section class="page cover">
+  <p class="eyebrow">A private knowledge bank</p>
+  <h1 class="cover-title">Lo<span>ci</span></h1>
+  <p class="cover-tag">Your knowledge, kept in its place.</p>
+  <p class="cover-sub">A desktop app that turns everything you read (papers, books, lecture notes) into a library you can search by words or by meaning, with every result pointing to its page. It runs entirely on your own computer.</p>
+
+  <div class="plan" aria-hidden="true">
+    <!-- A memory palace drawn as a floor plan: each room is a workspace, each mark a page. -->
+    <svg viewBox="0 0 680 420" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Mono, Consolas, monospace">
+      <g fill="none" stroke="#3A4262" stroke-width="1.4">
+        <rect x="1" y="1" width="678" height="418"/>
+        <line x1="250" y1="1" x2="250" y2="265"/>
+        <line x1="1" y1="265" x2="420" y2="265"/>
+        <line x1="420" y1="150" x2="420" y2="419"/>
+        <line x1="420" y1="150" x2="679" y2="150"/>
+        <line x1="160" y1="265" x2="160" y2="419"/>
+      </g>
+      <g stroke="#121521" stroke-width="4">
+        <line x1="250" y1="170" x2="250" y2="210"/>
+        <line x1="60" y1="265" x2="100" y2="265"/>
+        <line x1="420" y1="300" x2="420" y2="340"/>
+        <line x1="520" y1="150" x2="560" y2="150"/>
+        <line x1="160" y1="320" x2="160" y2="360"/>
+        <line x1="300" y1="265" x2="340" y2="265"/>
+      </g>
+      <rect x="252" y="3" width="425" height="145" fill="#2F4FCB" fill-opacity="0.22"/>
+      <g font-size="11" fill="#AEB5C8" letter-spacing="0.5">
+        <text x="18" y="30">DEEP LEARNING</text><text x="18" y="45">FOUNDATIONS</text>
+        <text x="270" y="30" fill="#DDE2F0">LANGUAGE MODELS</text>
+        <text x="18" y="293">THESIS DRAFTS</text>
+        <text x="178" y="293">IMAGE &amp; GENERATIVE MODELS</text>
+        <text x="438" y="178">ORGANIC CHEMISTRY</text>
+      </g>
+      <g font-size="9" fill="#6E7694">
+        <text x="18" y="247">4 documents</text>
+        <text x="270" y="132" fill="#9DB0FF">11 documents · 600+ pages</text>
+        <text x="18" y="402">2 documents</text>
+        <text x="178" y="402">6 documents</text>
+        <text x="438" y="402">13 documents</text>
+      </g>
+      <g fill="#9DB0FF"><circle cx="540" cy="78" r="4"/><circle cx="610" cy="104" r="3"/><circle cx="470" cy="110" r="3"/></g>
+      <g fill="#5C6585"><circle cx="120" cy="150" r="3"/><circle cx="330" cy="350" r="3"/><circle cx="560" cy="280" r="3"/><circle cx="90" cy="350" r="3"/><circle cx="190" cy="80" r="3"/></g>
+      <line x1="540" y1="78" x2="600" y2="44" stroke="#9DB0FF" stroke-width="1"/>
+      <text x="604" y="47" font-size="10" fill="#DDE2F0">p. 4</text>
+    </svg>
+  </div>
+
+  <div class="cover-meta">
+    <span><b>Project overview</b></span>
+    <span>Version 0.3 · October 2026</span>
+    <span>Runs on Windows · offline after setup</span>
+  </div>
+  <div class="folio"><span>Loci is a working name</span><span>1</span></div>
+</section>
+
+<!-- 2 · Problem and idea -->
+<section class="page">
+  <p class="eyebrow">Why we are building it</p>
+  <h2>You read hundreds of pages. Finding the one you need <em>should take seconds.</em></h2>
+  <p class="lede">Students and researchers live in documents: papers, textbooks, lecture notes, past exams. The tools around them were not built for collections that keep growing.</p>
+
+  <div class="pains">
+    <div class="pain">
+      <p class="q">"I know I read it somewhere."</p>
+      <p>Search inside one PDF at a time, or re-read whole chapters to find a passage you saw last week.</p>
+    </div>
+    <div class="pain">
+      <p class="q">"I uploaded the same papers again."</p>
+      <p>Online AI tools forget everything between sessions, and every upload means handing your documents to someone else's server.</p>
+    </div>
+    <div class="pain">
+      <p class="q">"Where did that answer come from?"</p>
+      <p>AI answers sound confident, but checking them against the source means hunting for it yourself.</p>
+    </div>
+  </div>
+
+  <div class="idea">
+    <p class="label">The idea: a knowledge bank that stays with you</p>
+    <ul>
+      <li><b>Import once</b><span>Add files or whole folders. Loci reads them in the background and keeps them, organized into workspaces.</span></li>
+      <li><b>Find anything</b><span>Search by exact words or by meaning, across everything, and jump straight to the page.</span></li>
+      <li><b>Ask</b><span>Get answers written only from your documents, with every claim cited to a page you can open. <span class="badge next">Next</span></span></li>
+      <li><b>Keep it private</b><span>Documents and AI stay on your computer. No account, no uploads, works offline.</span></li>
+    </ul>
+  </div>
+  <div class="folio"><span>Loci · Why</span><span>2</span></div>
+</section>
+
+<!-- 3 · How it works -->
+<section class="page">
+  <p class="eyebrow">How it works</p>
+  <h2>One place per subject. <em>Everything inside it, findable.</em></h2>
+  <p class="lede">The name comes from the method of loci, the memory palace: you remember things by the place you keep them. In Loci each subject, project or book gets its own workspace, and every result leads back to its page.</p>
+
+  <div class="steps">
+    <div class="step">
+      <p class="n">STEP 1</p>
+      <h3>Create a workspace</h3>
+      <p>One per course, research project or book, so collections never mix. The same file can live in several.</p>
+      <span class="badge now">Available</span>
+    </div>
+    <div class="step">
+      <p class="n">STEP 2</p>
+      <h3>Add documents</h3>
+      <p>Drop in files or whole folders: PDF, text, Markdown. Duplicates are spotted, and small files come first.</p>
+      <span class="badge now">Available</span>
+    </div>
+    <div class="step">
+      <p class="n">STEP 3</p>
+      <h3>Loci reads them</h3>
+      <p>Text is extracted page by page and indexed in the background. Word search works within seconds.</p>
+      <span class="badge now">Available</span>
+    </div>
+    <div class="step">
+      <p class="n">STEP 4</p>
+      <h3>Find, then ask</h3>
+      <p>Search by words or meaning today; ask questions and get cited answers next.</p>
+      <span class="badge next">Ask: next</span>
+    </div>
+  </div>
+
+  <div class="how-shot">
+    <div class="shot"><img src="images/home.png" alt="Loci home screen showing three workspaces: Language models, Image and generative models, Deep learning foundations"></div>
+    <p class="caption">The home screen: one workspace per subject. Real screenshot, version 0.3, with 21 machine-learning papers.</p>
+  </div>
+  <div class="folio"><span>Loci · How it works</span><span>3</span></div>
+</section>
+
+<!-- 4 · Find -->
+<section class="page">
+  <p class="eyebrow">Find anything <span class="badge now">Available now</span></p>
+  <h2>Search the way you think, <em>not the way it was written.</em></h2>
+
+  <div class="find-main">
+    <div class="shot"><img src="images/search-meaning.png" alt="Search results for 'making models follow instructions using human feedback', showing passages from the InstructGPT and GPT-3 papers with page numbers"></div>
+    <p class="caption">"making models follow instructions using human feedback": the InstructGPT paper first, with matching passages and their pages. Real screenshot, version 0.3.</p>
+  </div>
+
+  <div class="notes">
+    <div class="note"><h3>By words</h3><p>Exact terms, names and formulas, with word forms matched (<i>learn</i> finds <i>learning</i>). Matches are <mark>highlighted</mark>.</p></div>
+    <div class="note"><h3>By meaning</h3><p>Describe an idea in your own words. A small model running on your computer finds passages that say it differently.</p></div>
+    <div class="note"><h3>Both, combined</h3><p>The two rankings are merged: the precision of words and the reach of meaning in one list.</p></div>
+    <div class="note"><h3>Straight to the page</h3><p>Every result names its page. One click opens the document there.</p></div>
+    <div class="note"><h3>Only real matches</h3><p>A page must actually support your search to be shown. If nothing does, Loci says so.</p></div>
+    <div class="note"><h3>Fast at any size</h3><p>Searches answer in under a tenth of a second, even across hundreds of documents.</p></div>
+  </div>
+
+  <div class="nonsense">
+    <div class="shot"><img src="images/search-nonsense.png" alt="Search for 'my grandmother bakes chocolate cake' showing no matches"></div>
+    <p class="caption">Unrelated text finds nothing. Loci never pads results with guesses.</p>
+  </div>
+  <div class="folio"><span>Loci · Find</span><span>4</span></div>
+</section>
+
+<!-- 5 · Ordinary laptops -->
+<section class="page">
+  <p class="eyebrow">Built for ordinary laptops <span class="badge now">Available now</span></p>
+  <h2>No graphics card, no cloud. <em>Just your computer.</em></h2>
+  <p class="lede">Loci is designed for the laptops students and researchers already own (8 to 16 GB of memory) and stays responsive while it works.</p>
+
+  <div class="laptop-grid">
+    <div>
+      <div class="shot panel-shot"><img src="images/status-panel.png" alt="Status panel showing search by meaning 25% prepared, about 1 minute left, memory and CPU use, and a pause button"></div>
+      <p class="caption">The status panel, always one click away.</p>
+    </div>
+    <div class="facts">
+      <div class="fact"><span class="dot"></span><div><h3>Searchable first, smarter later</h3><p>Documents are word-searchable within seconds of import. Search by meaning is prepared in the background, with the time left shown.</p></div></div>
+      <div class="fact"><span class="dot"></span><div><h3>Knows the computer it runs on</h3><p>Loci detects how much memory you have and picks lighter or stronger local models to match.</p></div></div>
+      <div class="fact"><span class="dot"></span><div><h3>Polite in the background</h3><p>Pause and resume at any time. Loci pauses on its own when memory runs low, and continues where it stopped after a restart.</p></div></div>
+      <div class="fact"><span class="dot"></span><div><h3>Offline after setup</h3><p>The only download is a 90 MB search model, once. After that, nothing leaves your computer.</p></div></div>
+    </div>
+  </div>
+
+  <div class="numbers">
+    <div class="num"><p class="v">87<small>%</small></p><p class="l">of test questions found the right paper in the top 5 results</p></div>
+    <div class="num"><p class="v">0.14<small> s</small></p><p class="l">to read a typical PDF (median)</p></div>
+    <div class="num"><p class="v">&lt;0.1<small> s</small></p><p class="l">for a search across all documents</p></div>
+    <div class="num"><p class="v">~30<small> min</small></p><p class="l">to prepare search by meaning for 358 papers, in the background</p></div>
+  </div>
+  <p class="small bench">Measured on 358 openly licensed arXiv papers (9,972 pages) with 45 test questions, on a 16 GB laptop without a graphics card.</p>
+  <div class="folio"><span>Loci · Performance</span><span>5</span></div>
+</section>
+
+<!-- 6 · Ask -->
+<section class="page">
+  <p class="eyebrow">Ask your documents <span class="badge next">Coming in v0.4</span></p>
+  <h2>Answers you can check, <em>page by page.</em></h2>
+  <p class="lede">The Ask section will answer questions using only your documents. Each claim is checked against the passage it came from and cited to a page you can open. When your documents don't contain the answer, Loci will say so instead of guessing.</p>
+  <span class="preview-tag">Design preview · not in the current version</span>
+
+  <div class="ask">
+    <div class="ask-bar"><span>Language models · Ask</span><span>Answers from 11 documents</span></div>
+    <div class="ask-body">
+      <p class="question">How does LoRA make fine-tuning large models cheaper?</p>
+      <div class="answer">
+        <p>LoRA keeps the pre-trained weights frozen and trains only a pair of small low-rank matrices added to each layer <span class="cite">LoRA · p. 1</span>. Because the number of trainable parameters drops sharply, fine-tuning needs far less GPU memory, and each task only has to store the small matrices <span class="cite">LoRA · p. 2</span>. Unlike adapter layers, the matrices can be merged into the weights after training, so answers are not slower to produce <span class="cite">LoRA · p. 4</span>.</p>
+      </div>
+      <p class="checked">Every sentence checked against its source passage</p>
+      <div class="sources">
+        <div class="source"><b>LoRA: Low-Rank Adaptation</b><span>page 1 · open at page</span></div>
+        <div class="source"><b>LoRA: Low-Rank Adaptation</b><span>page 2 · open at page</span></div>
+        <div class="source"><b>LoRA: Low-Rank Adaptation</b><span>page 4 · open at page</span></div>
+      </div>
+      <p class="question">Which GPU did the authors use?</p>
+      <div class="answer not-found">
+        <p>The documents in this workspace don't say which GPU the LoRA authors used, so Loci can't answer that from them. The closest passage describes the memory saved during training <span class="cite">LoRA · p. 1</span>.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="rules">
+    <div class="rule"><h3>Only from your documents</h3><p>The AI writes from the passages Loci found, not from what it half-remembers.</p></div>
+    <div class="rule"><h3>Checked, then cited</h3><p>Each claim is verified against its passage before you see it. Click a citation to open the page.</p></div>
+    <div class="rule"><h3>Local and private</h3><p>The AI model runs on your computer, sized to its memory. Nothing is sent online.</p></div>
+  </div>
+  <div class="folio"><span>Loci · Ask</span><span>6</span></div>
+</section>
+
+<!-- 7 · Features -->
+<section class="page">
+  <p class="eyebrow">Everything Loci will do</p>
+  <h2>One shared core, <em>plus what you need.</em></h2>
+  <p class="lede">Every user gets the same core. Specialized tools come as optional extensions, the way code editors work, so a chemistry student and a historian each install only what helps them.</p>
+
+  <table class="feature-table">
+    <thead><tr><th>Feature</th><th>What it does</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr class="group"><td colspan="3">Organize and find</td></tr>
+      <tr><td>Workspaces</td><td class="d">Separate collections per subject or project</td><td><span class="badge now">Now</span></td></tr>
+      <tr><td>Import files and folders</td><td class="d">PDF, text and Markdown; duplicates detected; progress and time left</td><td><span class="badge now">Now</span></td></tr>
+      <tr><td>Search by words and meaning</td><td class="d">Combined ranking, highlighted passages, page numbers</td><td><span class="badge now">Now</span></td></tr>
+      <tr><td>Open at page</td><td class="d">Jump from any result to its page in your PDF viewer</td><td><span class="badge now">Now</span></td></tr>
+      <tr><td>Background status</td><td class="d">Time left, computer load, pause, automatic low-memory pause</td><td><span class="badge now">Now</span></td></tr>
+
+      <tr class="group"><td colspan="3">Understand</td></tr>
+      <tr><td>Ask with citations</td><td class="d">Answers from your documents, checked and cited to pages</td><td><span class="badge next">v0.4</span></td></tr>
+      <tr><td>Conversation memory</td><td class="d">Each workspace remembers past questions; memory you can see and edit</td><td><span class="badge next">v0.4</span></td></tr>
+      <tr><td>Summaries</td><td class="d">A short overview of each document, and summaries on request</td><td><span class="badge next">v0.5</span></td></tr>
+
+      <tr class="group"><td colspan="3">Study and analyze</td></tr>
+      <tr><td>Flashcards and quizzes</td><td class="d">Generated from your material, with links back to the source</td><td><span class="badge later">v0.6</span></td></tr>
+      <tr><td>Exam-paper analysis</td><td class="d">Question patterns, topics and difficulty across past papers; practice papers in the same pattern</td><td><span class="badge later">v0.6</span></td></tr>
+      <tr><td>Knowledge packs</td><td class="d">Installable offline knowledge such as dictionaries and reference data</td><td><span class="badge later">v0.7</span></td></tr>
+      <tr><td>Suggestions</td><td class="d">Related documents, recurring topics, "compare these papers?"</td><td><span class="badge later">v0.8</span></td></tr>
+
+      <tr class="group"><td colspan="3">Extensions</td></tr>
+      <tr><td>More formats</td><td class="d">Scanned PDFs (text recognition), Word, PowerPoint, EPUB</td><td><span class="badge later">Planned</span></td></tr>
+      <tr><td>Subject tools</td><td class="d">Mathematics, chemistry, engineering: formulas, tables, calculators the AI can use</td><td><span class="badge later">Planned</span></td></tr>
+      <tr><td>Styled outputs</td><td class="d">Designed flashcards, formatted summaries and reports</td><td><span class="badge later">Planned</span></td></tr>
+    </tbody>
+  </table>
+  <div class="folio"><span>Loci · Features</span><span>7</span></div>
+</section>
+
+<!-- 8 · Principles, roadmap, try it -->
+<section class="page">
+  <p class="eyebrow">What we stand for</p>
+  <h2>Trustworthy by design, <em>built in the open.</em></h2>
+
+  <div class="principles">
+    <div class="principle"><span class="k">i</span><div><h3>Private by default</h3><p>Your documents and the AI stay on your computer. No accounts, no uploads.</p></div></div>
+    <div class="principle"><span class="k">ii</span><div><h3>Every answer has a source</h3><p>Results and answers point to the page they came from, so you can always check.</p></div></div>
+    <div class="principle"><span class="k">iii</span><div><h3>Made for everyday hardware</h3><p>Fast on 8 to 16 GB laptops; it adapts to the computer instead of demanding a better one.</p></div></div>
+    <div class="principle"><span class="k">iv</span><div><h3>Tested with real users</h3><p>Development pauses at planned demo gates so people outside the team can try it before we go further.</p></div></div>
+  </div>
+
+  <div class="road" aria-label="Roadmap">
+    <p class="eyebrow">Roadmap</p>
+    <svg viewBox="-30 0 700 100" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Sans, Segoe UI, Arial, sans-serif">
+      <line x1="20" y1="40" x2="620" y2="40" stroke="#E3E5EA" stroke-width="4" stroke-linecap="round"/>
+      <line x1="20" y1="40" x2="205" y2="40" stroke="#2F4FCB" stroke-width="4" stroke-linecap="round"/>
+      <g fill="#2F4FCB"><circle cx="20" cy="40" r="7"/><circle cx="85" cy="40" r="7"/><circle cx="150" cy="40" r="7"/></g>
+      <rect x="196" y="31" width="18" height="18" rx="3" fill="#FFFFFF" stroke="#2F4FCB" stroke-width="3"/>
+      <g fill="#FFFFFF" stroke="#B9C3EC" stroke-width="3"><circle cx="275" cy="40" r="7"/><circle cx="350" cy="40" r="7"/><circle cx="485" cy="40" r="7"/><circle cx="550" cy="40" r="7"/><circle cx="620" cy="40" r="7"/></g>
+      <g fill="#FFFFFF" stroke="#B9C3EC" stroke-width="3"><rect x="408" y="31" width="18" height="18" rx="3"/></g>
+      <g font-size="10.5" fill="#16181D" text-anchor="middle" font-weight="600">
+        <text x="20" y="72">0.1</text><text x="85" y="72">0.2</text><text x="150" y="72">0.3</text>
+        <text x="205" y="72" fill="#2F4FCB">Demo 1</text>
+        <text x="275" y="72">0.4</text><text x="350" y="72">0.5</text><text x="417" y="72">Demo 2</text>
+        <text x="485" y="72">0.6</text><text x="550" y="72">0.7–0.9</text><text x="620" y="72">1.0</text>
+      </g>
+      <g font-size="9" fill="#5B6170" text-anchor="middle">
+        <text x="20" y="88">Foundation</text><text x="85" y="88">Workspaces</text><text x="150" y="88">Search</text>
+        <text x="205" y="88" fill="#2F4FCB">We are here</text>
+        <text x="275" y="88">Ask</text><text x="350" y="88">Prototype</text><text x="417" y="88">Testing</text>
+        <text x="485" y="88">Study</text><text x="550" y="88">Packs, polish</text><text x="620" y="88">Release</text>
+      </g>
+      <text x="20" y="16" font-size="8.5" fill="#5B6170" font-family="IBM Plex Mono, Consolas, monospace">DONE</text>
+      <text x="275" y="16" font-size="8.5" fill="#5B6170" font-family="IBM Plex Mono, Consolas, monospace">NEXT</text>
+    </svg>
+  </div>
+
+  <div class="phases">
+    <div><p class="phase-k">Now</p><p>Version 0.3 is with testers. We are watching how people import, organize and search, and fixing what confuses them.</p></div>
+    <div><p class="phase-k">Next</p><p>Version 0.4 adds Ask: answers from your documents, checked and cited, from a local AI model chosen by benchmark.</p></div>
+    <div><p class="phase-k">After</p><p>A polished prototype, then study tools, exam-paper analysis, knowledge packs and optional extensions.</p></div>
+  </div>
+
+  <div class="try">
+    <div>
+      <h3>Try it</h3>
+      <p>Version 0.3 is open for testing on Windows 10 and 11. Download the zip, extract it and double-click Loci.exe. No installation or Python needed.</p>
+      <p class="link">github.com/AzureSky0/Local-Research-Assistant-and-Study-Buddy-Hybrid/releases</p>
+    </div>
+    <div>
+      <h3>Follow the project</h3>
+      <p>Loci is developed in the open as a learning project. The code, the roadmap and the decisions behind it are on GitHub. Feedback and testers are welcome.</p>
+      <p class="link">github.com/AzureSky0/Local-Research-Assistant-and-Study-Buddy-Hybrid</p>
+    </div>
+  </div>
+  <p class="name-note">Loci is a working name; the final name will be chosen before the public release. Screenshots show version 0.3; the Ask page is a design preview of version 0.4.</p>
+  <div class="folio"><span>Loci · Roadmap</span><span>8</span></div>
+</section>
+
+</body>
+</html>
