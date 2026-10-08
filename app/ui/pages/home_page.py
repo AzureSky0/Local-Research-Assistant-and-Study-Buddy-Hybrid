@@ -33,6 +33,7 @@ class WorkspaceCard(QPushButton):
     def __init__(self, workspace: Workspace, document_count: int, archived: bool) -> None:
         super().__init__()
         self.workspace = workspace
+        self.document_count = document_count
         self.setProperty("variant", "workspaceCard")
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setFixedHeight(CARD_HEIGHT)

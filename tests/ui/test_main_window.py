@@ -393,3 +393,20 @@ def test_search_by_meaning_after_documents_are_embedded(
     assert page._results._model.item(1).text() == "adam.md"
     assert not page._meaning_row.isVisibleTo(page)
 
+
+
+def test_home_shows_document_counts_after_import(window: MainWindow, tmp_path: Path) -> None:
+    folder = tmp_path / "notes"
+    folder.mkdir()
+    for name in ("a.md", "b.md"):
+        (folder / name).write_text(f"Notes in {name}.", encoding="utf-8")
+
+    workspace = window._workspaces.create_workspace("Notes", None, "blue")
+    window._workspaces.open_workspace(workspace.id)
+    window.workspace_view._import_folder(folder)
+    wait_until(lambda: len(window.workspace_view.library_page._model.documents) == 2)
+
+    window._workspaces.close_workspace()
+
+    card = next(c for c in window.home_page._cards if c.workspace.id == workspace.id)
+    assert card.document_count == 2

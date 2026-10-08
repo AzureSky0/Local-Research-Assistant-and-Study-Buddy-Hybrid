@@ -82,19 +82,25 @@ class MainWindow(QMainWindow):
     def _on_workspace_changed(self, workspace: Workspace | None) -> None:
         if workspace is None:
             self.setWindowTitle(APP_NAME)
-            self._stack.setCurrentWidget(self.home_page)
+            self._show_home()
             return
 
         self.setWindowTitle(f"{workspace.name} — {APP_NAME}")
         self.workspace_view.show_workspace(workspace)
         self._stack.setCurrentWidget(self.workspace_view)
 
+    def _show_home(self) -> None:
+        # Document counts change with imports, which the home page does not
+        # watch, so refresh it whenever it is shown.
+        self.home_page.refresh()
+        self._stack.setCurrentWidget(self.home_page)
+
     def _show_settings(self) -> None:
         self._stack.setCurrentWidget(self.settings_page)
 
     def _show_current(self) -> None:
         if self._workspaces.current_workspace is None:
-            self._stack.setCurrentWidget(self.home_page)
+            self._show_home()
         else:
             self._stack.setCurrentWidget(self.workspace_view)
 
