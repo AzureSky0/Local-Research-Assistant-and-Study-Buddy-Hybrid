@@ -8,7 +8,7 @@ the plain words in the "Users see" column.
 | **Workspace** | A separate collection of documents with its own search and memory (one per subject, project or book). | Workspace |
 | **Library** | The workspace page for viewing and searching documents. | Library |
 | **Ask** *(v0.4)* | The workspace page for questions answered from the documents, with citations. | Ask |
-| **Document** | An imported file (PDF, `.txt`, `.md`); the app keeps its own copy. | Document |
+| **Document** | An imported file (PDF, `.txt`, `.md`). The app does not copy it: it stores the path and the extracted text. | Document |
 | **Page** | Extracted text of one page; text files have one page. Results and citations point to pages. | Page |
 | **Chunk / passage** | A piece of a document (~220 words, overlapping by 40) used for search by meaning; records its page range. | Passage |
 | **Processing pipeline** | The staged background work after import: extract → keyword index → chunk. Each stage is stored, so it resumes after a restart. | "Reading documents" |

@@ -17,7 +17,7 @@ How Loci is built, as of v0.3. For the reasons behind each choice see
 └────────┼───────────────────────────────────────────────────────────────────────────────────┘
          ▼
   SQLite database (WAL)  ── tables, FTS5 keyword index, sqlite-vec vector index
-  Data folder            ── copies of imported documents, models, logs
+  Data folder            ── models, logs, preferences (imported files are not copied)
 ```
 
 Everything runs on the user's computer. The only network access is the
@@ -52,7 +52,7 @@ models), `repository/`, `services/`.
 
 ```text
 Import (background thread)
-  validate type → copy into the data folder → checksum
+  validate type → checksum (the file stays where it is; its path is stored)
   → duplicate in this workspace? skip : record as REGISTERED
 
 Processing pipeline (one background worker, small files first, resumable)
@@ -98,7 +98,7 @@ text. Without the check, random text listed every document.
 | Workspaces, documents, pages, passages | SQLite tables |
 | Keyword index | FTS5 virtual table `page_search` (porter stemming, accents ignored) |
 | Vectors | sqlite-vec table per model, `chunk_vectors_<model>`, partitioned by workspace |
-| Imported files | `<data folder>/documents/` |
+| Imported files | Not copied: read where they are; path and extracted text stored in the database |
 | Search models | `<data folder>/models/` |
 | Logs | `<data folder>/logs/app.log` |
 | Preferences | `<data folder>/preferences.json` |

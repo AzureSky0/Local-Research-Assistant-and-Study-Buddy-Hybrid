@@ -31,7 +31,8 @@ background, so be online the first time; you can carry on while it does.
 After that the app works offline.
 
 To remove the app later, delete the Loci folder and
-`%LOCALAPPDATA%\Loci` (your workspaces and copies of documents).
+`%LOCALAPPDATA%\Loci` (your workspaces and the text Loci extracted;
+your own files are never copied, changed or deleted).
 
 Your documents stay on your computer. Nothing is uploaded.
 
