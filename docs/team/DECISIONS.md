@@ -43,6 +43,7 @@ Choices about models, storage or performance need **measurements**
 | 038 | Accuracy and source rules | Answers only from retrieved passages; every claim cited (document, page) and checked; "not in your documents" instead of guessing; code computes numbers, the AI describes. |
 | 039 | Structured extraction; exam workflow in v0.6 | Collection-wide analysis turns documents into tables first (e.g. one row per exam question), then analyzes in code. |
 | 041 | Working name "Loci"; Demo Gates as planned | Final name later. Demo Gate 1 after v0.3, Demo Gate 2 after v0.5. |
+| 042 | Licence: AGPL-3.0 with an extension exception | Loci is AGPL-3.0 (compatible with PyMuPDF, keeps the project open). Extensions that use only the public extension interface may use any licence. The copyright holder keeps the option of commercial licences; core contributions will need a contributor licence agreement. Community extensions arrive in phases: data packs first, code extensions only after permissions, isolation and review exist. |
 
 ## Architecture
 

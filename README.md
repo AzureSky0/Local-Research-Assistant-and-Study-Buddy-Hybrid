@@ -68,7 +68,7 @@ On first use the app downloads its search-by-meaning model (about 90 MB)
 in the background. Search by words works immediately; search by meaning
 starts once the model is ready. After that, no internet is needed.
 
-Your data (database, copies of imported documents, logs, models) is kept in
+Your data (the database with the text of your documents, logs, models) is kept in
 the per-user app data folder — `%LOCALAPPDATA%\Loci` on
 Windows (an earlier `LocalResearchAssistant` folder is moved there
 automatically). To use a different folder (for example to try the app without
@@ -122,7 +122,7 @@ UI (PySide6 pages and widgets)
 ```
 
 ```text
-Import → copy + checksum → extract text per page → keyword index (SQLite FTS5)
+Import → checksum (files stay where they are) → extract text per page → keyword index (SQLite FTS5)
        → split into passages → embed (fastembed / ONNX) → vector index (sqlite-vec)
 Search → words (FTS5, bm25) + meaning (nearest passages) → combined ranking
        → only pages that actually support the search are shown
@@ -165,6 +165,27 @@ final product name will follow.
 
 The repository keeps its original name, Local Research Assistant + Study
 Buddy Hybrid.
+
+---
+
+# Licence
+
+Loci is free software, licensed under the **GNU Affero General Public
+License v3.0** ([LICENSE](LICENSE)). You may use, study, share and change
+it; if you share a modified version (including running it for others over
+a network), you must make its source code available under the same
+licence.
+
+- **Extensions** that use only Loci's public extension interface may use
+  any licence: see [LICENSE-EXTENSION-EXCEPTION.md](LICENSE-EXTENSION-EXCEPTION.md).
+- **Third-party components** keep their own licences:
+  [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Every Windows package
+  includes their full licence texts in its `licenses` folder.
+- **Commercial licensing:** if the AGPL does not fit your use, other
+  licensing terms may be available from the copyright holder; please open
+  an issue to ask.
+
+Copyright © 2026 Akshat Manojkumar Sahu.
 
 ---
 

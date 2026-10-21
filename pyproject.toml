@@ -1,8 +1,10 @@
 [project]
 name = "local-research-assistant-and-study-buddy-hybrid"
-version = "0.1.0"
-description = "NotebookLM for students, with built-in study tools and a persistent personal knowledge base."
+version = "0.3.1"
+description = "Loci: a private, local knowledge bank for your documents, with search by words and meaning."
 readme = "README.md"
+license = "AGPL-3.0-only"
+license-files = ["LICENSE", "LICENSE-EXTENSION-EXCEPTION.md", "THIRD_PARTY_NOTICES.md"]
 requires-python = ">=3.12"
 
 authors = [

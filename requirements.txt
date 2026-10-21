@@ -16,6 +16,7 @@ numpy==2.5.3
 onnxruntime==1.30.0
 packaging==26.2
 pathspec==1.1.1
+pip-licenses==5.5.5
 platformdirs==4.10.0
 pluggy==1.6.0
 psutil==7.2.2
@@ -23,6 +24,7 @@ pydantic-settings==2.14.2
 pydantic==2.13.4
 pydantic_core==2.46.4
 Pygments==2.20.0
+pyinstaller==6.22.3
 pymupdf==1.28.0
 PySide6==6.11.1
 PySide6_Addons==6.11.1

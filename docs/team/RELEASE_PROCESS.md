@@ -45,7 +45,11 @@ How to build the Windows app and publish it for testers.
 
 ## What the build contains
 
-Defined in `packaging/loci.spec`:
+Defined in `packaging/loci.spec`, plus a `licenses` folder added by
+`scripts/build_windows.py` (Loci's AGPL licence and extension exception,
+third-party notices, every bundled component's licence text, and where to
+get the source code). When a dependency is added, add it to
+`BUNDLED_PACKAGES` in the build script and to `THIRD_PARTY_NOTICES.md`.
 
 - The app, Python and all libraries (Qt, PyMuPDF, ONNX Runtime, NumPy).
 - `alembic.ini` and the migration scripts (Alembic reads them from disk);
