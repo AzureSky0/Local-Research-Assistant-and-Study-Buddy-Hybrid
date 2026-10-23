@@ -18,11 +18,14 @@ How to build the Windows app and publish it for testers.
    - [ ] [STATUS.md](STATUS.md) changelog updated.
 2. **Build**
    ```powershell
-   pip install pyinstaller          # once
+   pip install -r requirements.txt                               # once
+   winget install --id JRSoftware.InnoSetup -e --scope user      # once
    python scripts/build_windows.py
    ```
-   Produces `dist/Loci/Loci.exe` (~290 MB folder) and
-   `dist/Loci-<version>-windows.zip` (~120 MB).
+   Produces `dist/Loci/Loci.exe` (~290 MB folder),
+   `dist/Loci-<version>-windows.zip` (~120 MB) and the installer
+   `dist/Loci-<version>-windows-setup.exe` (~90 MB). Without Inno Setup
+   the installer is skipped (or set `LOCI_ISCC` to `ISCC.exe`).
 3. **Test the build** without Python on the PATH and with an empty data
    folder:
    ```powershell
@@ -33,10 +36,15 @@ How to build the Windows app and publish it for testers.
    - [ ] The window opens; create a workspace and import a few PDFs.
    - [ ] Search works by words and, after the model download, by meaning.
    - [ ] `%TEMP%\loci-release-check\logs\app.log` has no errors.
+   - [ ] **Installer update:** install the previous release's installer,
+         then run the new one without choosing a folder. It installs into
+         the same folder, the Start-menu entry opens the new version, and
+         the library is still there. While Loci is open, the installer
+         must ask to close it first.
 4. **Publish** (GitHub CLI, logged in with `gh auth login`):
    ```powershell
-   gh release create v0.3.1 dist\Loci-0.3.1-windows.zip `
-     --target main --title "Loci 0.3.1" --notes-file release-notes.md
+   gh release create v0.3.3 dist\Loci-0.3.3-windows-setup.exe dist\Loci-0.3.3-windows.zip `
+     --target main --title "Loci 0.3.3" --notes-file release-notes.md
    ```
    Release notes are written for testers: what it is, how to install
    (including "More info → Run anyway"), what is new, what to try.
@@ -61,13 +69,33 @@ get the source code). When a dependency is added, add it to
 The packaged app has no console: unexpected errors are written to the
 log, and libraries that print to the console are silenced.
 
+## The installer
+
+`packaging/loci-installer.iss` (Inno Setup 6), compiled by the build
+script with the version from `APP_VERSION`.
+
+- **Never change the `AppId`.** It is how a new installer recognises the
+  installed copy and updates it in place.
+- Per-user install to `%LOCALAPPDATA%\Programs\Loci`, no admin prompt;
+  Start-menu entry, optional desktop icon, uninstaller in *Installed apps*.
+- Before copying, the old `_internal` and `licenses` folders are removed
+  so no outdated library is left behind.
+- A running Loci holds the `LociRunningMutex` mutex
+  (`app/core/single_instance.py`); setup and the uninstaller ask the user
+  to close it.
+- Installing an older version over a newer one asks first (default: no).
+- Installing, updating and uninstalling never touch the library in
+  `%LOCALAPPDATA%\Loci`. Loci itself copies the database to
+  `database\backups` before a new version migrates it (last 3 kept).
+
 ## Known limitations
 
 - **Unsigned:** Windows SmartScreen warns "unknown publisher". A code
   signing certificate is needed before the public release.
-- No installer or Start-menu entry yet: testers unzip and run.
-- No automatic updates: testers download new versions from the release
-  page.
+- No automatic updates: testers download the new installer from the
+  release page and run it; it replaces the installed version in place.
+- People who used a zip (0.3.0–0.3.2) delete that folder once; the
+  installer cannot find copies unzipped into arbitrary folders.
 - Windows only for now.
 
 ## If a release is broken

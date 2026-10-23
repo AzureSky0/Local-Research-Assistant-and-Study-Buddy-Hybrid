@@ -1,11 +1,14 @@
-"""Build the Windows app for testers: dist/Loci/Loci.exe and a zip to share.
+"""Build the Windows app for testers: dist/Loci/Loci.exe, a zip and an installer.
 
 Usage (from the project root, inside the virtual environment):
 
     pip install -r requirements.txt   # includes pyinstaller and pip-licenses
     python scripts/build_windows.py
 
-Testers unzip the folder and double-click Loci.exe; no Python needed.
+Testers run the installer (dist/Loci-<version>-windows-setup.exe), or
+unzip the folder and double-click Loci.exe; no Python needed. The installer
+is made with Inno Setup 6 (packaging/loci-installer.iss) and replaces an
+installed older version in place. Without Inno Setup only the zip is made.
 
 The package gets a `licenses` folder: Loci's licence and extension
 exception, the third-party notices, the full licence text of every bundled
@@ -15,6 +18,7 @@ as the AGPL and the bundled components' licences require.
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import sys
@@ -26,6 +30,7 @@ sys.path.insert(0, str(ROOT))
 from app.core.constants import APP_NAME, APP_VERSION  # noqa: E402
 
 SPEC = ROOT / "packaging" / "loci.spec"
+INSTALLER_SCRIPT = ROOT / "packaging" / "loci-installer.iss"
 DIST = ROOT / "dist"
 REPOSITORY = "https://github.com/AzureSky0/Local-Research-Assistant-and-Study-Buddy-Hybrid"
 
@@ -54,9 +59,46 @@ def main() -> None:
         str(DIST / f"{APP_NAME}-{APP_VERSION}-windows"), "zip", DIST, APP_NAME
     )
 
+    installer = build_installer(app_folder)
+
     size_mb = sum(f.stat().st_size for f in app_folder.rglob("*") if f.is_file()) / 1e6
     print(f"\nApp folder: {app_folder} ({size_mb:.0f} MB)")
     print(f"Zip to share: {archive} ({Path(archive).stat().st_size / 1e6:.0f} MB)")
+    if installer is not None:
+        print(f"Installer: {installer} ({installer.stat().st_size / 1e6:.0f} MB)")
+    else:
+        print("Installer: skipped (Inno Setup 6 not found; set LOCI_ISCC to ISCC.exe)")
+
+
+def find_inno_compiler() -> Path | None:
+    """ISCC.exe from LOCI_ISCC, the PATH, or Inno Setup's default install folders."""
+    candidates = [os.environ.get("LOCI_ISCC"), shutil.which("ISCC")]
+    for base in (os.environ.get("LOCALAPPDATA"), os.environ.get("ProgramFiles(x86)")):
+        if base:
+            candidates.append(str(Path(base) / "Programs" / "Inno Setup 6" / "ISCC.exe"))
+            candidates.append(str(Path(base) / "Inno Setup 6" / "ISCC.exe"))
+    for candidate in candidates:
+        if candidate and Path(candidate).is_file():
+            return Path(candidate)
+    return None
+
+
+def build_installer(app_folder: Path) -> Path | None:
+    compiler = find_inno_compiler()
+    if compiler is None:
+        return None
+    subprocess.run(
+        [
+            str(compiler), "/Q",
+            f"/DAppVersion={APP_VERSION}",
+            f"/DSourceDir={app_folder}",
+            f"/DOutputDir={DIST}",
+            str(INSTALLER_SCRIPT),
+        ],
+        cwd=ROOT,
+        check=True,
+    )
+    return DIST / f"{APP_NAME}-{APP_VERSION}-windows-setup.exe"
 
 
 def add_licenses(folder: Path) -> None:

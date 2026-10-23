@@ -84,6 +84,7 @@ Choices about models, storage or performance need **measurements**
 
 | When | Decision | Why |
 |---|---|---|
+| 2026-10-23 | **Windows installer (Inno Setup), per user, updates in place.** Fixed AppId; installs to `%LOCALAPPDATA%\Programs\Loci` without admin rights; removes old program files before copying; asks to close a running Loci (named mutex); warns before a downgrade. The library is never touched; the database is backed up (last 3 kept, `database/backups`) before migrations. The zip stays for testers who prefer it. | Testers should update by running the new installer, without finding and deleting old folders, and never lose their library. |
 | 2026-10-07 | **Search evidence check:** a page must contain ≥30% of a search's meaningful words; meaning-only results only from supported documents. | Random text matched every document. Measured: all hard benchmark questions still found; unrelated searches return nothing. Rerankers were tried and rejected (≈2 s per search, unreliable). |
 | 2026-10-07 | **Windows package with PyInstaller**, distributed as a zip on GitHub Releases. | Testers should not need Python or a terminal. |
 | 2026-10-06 | **Short searches need all words; longer ones match pages with some of the words, best first.** | Questions rarely have every word on one page. |

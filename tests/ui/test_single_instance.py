@@ -1,8 +1,10 @@
+import sys
 from pathlib import Path
 
+import pytest
 from PySide6.QtWidgets import QApplication
 
-from app.core.single_instance import SingleInstance
+from app.core.single_instance import WINDOWS_MUTEX_NAME, SingleInstance
 from tests.ui.conftest import wait_until
 
 
@@ -51,3 +53,22 @@ def test_different_data_folders_do_not_block_each_other(qapp: QApplication, tmp_
 
     one.release()
     other.release()
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="the installer's mutex is Windows only")
+def test_running_copy_holds_the_installer_mutex(qapp: QApplication, tmp_path: Path) -> None:
+    import ctypes
+
+    def mutex_exists() -> bool:
+        synchronize = 0x00100000
+        handle = ctypes.windll.kernel32.OpenMutexW(synchronize, False, WINDOWS_MUTEX_NAME)
+        if handle:
+            ctypes.windll.kernel32.CloseHandle(handle)
+        return bool(handle)
+
+    instance = SingleInstance(tmp_path)
+    assert instance.acquire()
+    assert mutex_exists()
+
+    instance.release()
+    assert not mutex_exists()

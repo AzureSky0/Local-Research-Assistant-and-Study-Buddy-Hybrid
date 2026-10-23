@@ -56,7 +56,7 @@ paused** while testers try it; only fixes from their feedback go in.
 | Keyword search | < 100 ms | < 100 ms ✅ |
 | Search by meaning (vector lookup) | ~33 ms median | < 300 ms ✅ |
 | Random text finds nothing | ✅ (evidence check) | — |
-| Automated tests | 267 passing | all passing ✅ |
+| Automated tests | 270 passing | all passing ✅ |
 
 ## Known issues and technical debt
 
@@ -85,6 +85,11 @@ Good first tasks are marked ⭐.
 
 ## Changelog
 
+- **2026-10-23** — v0.3.3 in testing (branch `feature/windows-installer`):
+  a Windows installer that updates an installed older version in place
+  (no admin rights, Start-menu entry, uninstaller, library kept), asks to
+  close Loci first, warns before a downgrade, and a database backup before
+  a new version changes the library's format.
 - **2026-10-23** — v0.3.2 released after the first tester session: only one
   copy runs at a time (fixes "database is locked" on first start), a
   "Starting…" window, plain start-up error messages, no red low-memory alarm
