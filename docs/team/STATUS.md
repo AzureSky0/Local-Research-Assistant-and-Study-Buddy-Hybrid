@@ -1,7 +1,7 @@
 # Project status
 
 **Updated:** 2026-10-08 · **Stage:** 🚧 Demo Gate 1 (after v0.3) ·
-**Latest release:** [v0.3.2](https://github.com/AzureSky0/Local-Research-Assistant-and-Study-Buddy-Hybrid/releases/tag/v0.3.2)
+**Latest release:** [v0.3.3](https://github.com/AzureSky0/Local-Research-Assistant-and-Study-Buddy-Hybrid/releases/tag/v0.3.3)
 
 > Update this page at least weekly and after every release. Keep the
 > history short: move old "Recently done" items into the changelog
@@ -85,7 +85,7 @@ Good first tasks are marked ⭐.
 
 ## Changelog
 
-- **2026-10-23** — v0.3.3 in testing (branch `feature/windows-installer`):
+- **2026-10-23** — v0.3.3 released:
   a Windows installer that updates an installed older version in place
   (no admin rights, Start-menu entry, uninstaller, library kept), asks to
   close Loci first, warns before a downgrade, and a database backup before
