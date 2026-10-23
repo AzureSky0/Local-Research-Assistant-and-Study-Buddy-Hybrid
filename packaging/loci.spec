@@ -62,6 +62,7 @@ exe = EXE(
     [],
     exclude_binaries=True,
     name=APP_NAME,
+    icon=str(ROOT / "packaging" / "loci.ico"),  # made by scripts/make_app_icon.py
     console=False,  # a windowed app; logs go to the data folder
     upx=False,
 )

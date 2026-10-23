@@ -21,6 +21,7 @@ from app.ui.managers.library_manager import LibraryManager
 from app.ui.managers.processing_manager import ProcessingManager
 from app.ui.managers.workspace_manager import WorkspaceManager
 from app.ui.theme import apply_theme
+from app.ui.theme.app_icon import app_icon, app_icon_pixmap
 from app.ui.windows.main_window import MainWindow
 
 logger = logging.getLogger(__name__)
@@ -50,18 +51,30 @@ def provide_missing_console_streams() -> None:
     os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
 
 
+def use_own_taskbar_icon() -> None:
+    """Group Loci's windows under its own taskbar icon.
+
+    Without this, running from source shows Python's icon in the taskbar.
+    """
+    if sys.platform == "win32":
+        import ctypes
+
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("AzureSky0.Loci")
+
+
 def make_splash() -> QSplashScreen:
     """A small window shown at once, so a slow first start is not mistaken for a failure."""
-    pixmap = QPixmap(420, 160)
+    pixmap = QPixmap(460, 160)
     pixmap.fill(QColor("#FFFFFF"))
     painter = QPainter(pixmap)
-    painter.fillRect(0, 0, 420, 6, QColor("#2F4FCB"))
+    painter.fillRect(0, 0, 460, 6, QColor("#2F4FCB"))
+    painter.drawPixmap(32, 44, app_icon_pixmap(72))
     painter.setPen(QColor("#16181D"))
     painter.setFont(QFont("Segoe UI", 20, QFont.Weight.DemiBold))
-    painter.drawText(32, 72, settings.app_name)
+    painter.drawText(124, 76, settings.app_name)
     painter.setPen(QColor("#5B6170"))
     painter.setFont(QFont("Segoe UI", 11))
-    painter.drawText(32, 108, "Starting… the first start can take a minute.")
+    painter.drawText(124, 108, "Starting… the first start can take a minute.")
     painter.end()
     splash = QSplashScreen(pixmap, Qt.WindowType.WindowStaysOnTopHint)
     return splash
@@ -83,8 +96,10 @@ def main() -> int:
     configure_logging(debug=settings.debug)
     sys.excepthook = log_unhandled_error
 
+    use_own_taskbar_icon()
     app = QApplication(sys.argv)
     app.setApplicationName(settings.app_name)
+    app.setWindowIcon(app_icon())
 
     # One copy per data folder: a second start brings the first window forward.
     instance = SingleInstance(DATA_DIR)

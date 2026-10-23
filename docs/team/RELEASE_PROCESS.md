@@ -69,6 +69,12 @@ get the source code). When a dependency is added, add it to
 The packaged app has no console: unexpected errors are written to the
 log, and libraries that print to the console are silenced.
 
+## The logo
+
+The logo is one SVG in `app/ui/theme/app_icon.py` (window, start-up
+screen). After changing it, run `python scripts/make_app_icon.py` and
+commit the new `packaging/loci.ico` (used for Loci.exe and the installer).
+
 ## The installer
 
 `packaging/loci-installer.iss` (Inno Setup 6), compiled by the build

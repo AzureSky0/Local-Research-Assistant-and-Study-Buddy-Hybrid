@@ -62,6 +62,7 @@ OutputBaseFilename={#AppName}-{#AppVersion}-windows-setup
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
+SetupIconFile=loci.ico
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
