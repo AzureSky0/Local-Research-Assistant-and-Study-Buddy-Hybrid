@@ -1,6 +1,6 @@
 # Working name; the final product name comes later (Decision 041).
 APP_NAME = "Loci"
-APP_VERSION = "0.3.1"
+APP_VERSION = "0.3.2"
 
 APP_DATA_DIRECTORY_NAME = "Loci"
 # Data folders of earlier versions, moved to the new name on first start.

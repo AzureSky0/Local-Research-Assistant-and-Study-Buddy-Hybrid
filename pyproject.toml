@@ -1,6 +1,6 @@
 [project]
 name = "local-research-assistant-and-study-buddy-hybrid"
-version = "0.3.1"
+version = "0.3.2"
 description = "Loci: a private, local knowledge bank for your documents, with search by words and meaning."
 readme = "README.md"
 license = "AGPL-3.0-only"
