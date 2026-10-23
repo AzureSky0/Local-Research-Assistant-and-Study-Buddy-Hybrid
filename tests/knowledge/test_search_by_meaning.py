@@ -295,3 +295,41 @@ def test_number_tables_are_not_shown_as_meaning_matches(session: Session, worksp
     results = HybridSearchService(session, embedder).search(workspace_id, "which adam works")
 
     assert [p.file_name for p in results.passages] == ["adam.pdf"]
+
+
+def test_contents_pages_come_after_real_pages(session: Session, workspace_id: str) -> None:
+    contents = (
+        "Contents\n"
+        "1.1 Maximum Flow . . . . . . . . . . . . 3\n"
+        "1.1.3 Shortest Augmenting Path (Edmonds-Karp Algorithm) . . . . . . . . 8\n"
+        "1.1.4 Analysis of Edmonds-Karp . . . . . . . . . . 9\n"
+        "1.2 Matchings . . . . . . . . . . . . . 12\n"
+        "1.3 Minimum Cuts . . . . . . . . . . . . 15\n"
+    )
+    # A real section page is long; the contents page is short and dense.
+    real = (
+        "The Edmonds-Karp algorithm always augments along a shortest path, so it runs in polynomial time. "
+        + "Each augmentation saturates at least one edge of the residual network and distances never shrink. " * 25
+    )
+    add_document(session, workspace_id, "notes.pdf", [contents, real])
+
+    results = HybridSearchService(session, None).search(workspace_id, "edmonds karp")
+
+    assert [p.page_number for p in results.passages] == [2, 1]
+
+
+def test_meaning_only_passages_must_share_a_word_with_the_search(
+    session: Session, workspace_id: str
+) -> None:
+    # Long pages, so each page becomes its own passage.
+    page_about_adam = "Adam is an optimizer for training networks. " + "stochastic gradient update rule " * 70
+    page_without_the_word = "optimiser settings and optimiser choice " * 80
+    add_document(session, workspace_id, "notes.pdf", [page_about_adam, page_without_the_word])
+    embedder = FakeEmbedder()
+    embed_all(session, embedder)
+
+    results = HybridSearchService(session, embedder).search(workspace_id, "adam")
+
+    # The fake model puts "optimiser" next to "adam", but page 2 never says "adam".
+    assert results.used_meaning
+    assert all(p.page_number == 1 for p in results.passages)

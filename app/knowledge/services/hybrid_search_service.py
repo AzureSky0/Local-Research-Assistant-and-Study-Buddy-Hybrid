@@ -21,7 +21,7 @@ from app.knowledge.embeddings.embedder import Embedder, EmbeddingModelUnavailabl
 from app.knowledge.orm.chunk_orm import ChunkORM
 from app.knowledge.orm.vector_index_schema import existing_vector_tables, vector_table_name
 from app.knowledge.repository.vector_repository import VectorRepository
-from app.knowledge.services.evidence import is_evidence, query_terms
+from app.knowledge.services.evidence import is_evidence, query_terms, term_coverage
 from app.knowledge.services.keyword_search_service import (
     MAX_PASSAGES,
     PASSAGES_PER_DOCUMENT,
@@ -51,6 +51,12 @@ RRF_K = 60
 
 EXCERPT_WORDS = 40
 
+# A table of contents mentions every topic but explains none ("Edmonds-Karp
+# ....... 8"); pages with this many dot leaders are shown after the
+# document's other matching pages.
+CONTENTS_LEADERS = 3
+_DOT_LEADER = re.compile(r"(?:\.\s*){5,}\d{1,4}\b")
+
 
 @dataclass(slots=True)
 class _Candidate:
@@ -76,11 +82,14 @@ class HybridSearchService:
     def search(self, workspace_id: str, text: str, limit: int = MAX_PASSAGES) -> SearchResults:
         results = self._keyword.search(workspace_id, text, limit)
         terms = query_terms(results.query)
+        texts = self._page_texts(results.passages)
 
         # Pages that share only one or two words with a long search are
         # not evidence of anything (random text matches them too).
         if results.match_mode == "any" and results.passages:
-            self._keep_evidence_pages(results, terms)
+            self._keep_evidence_pages(results, terms, texts)
+
+        results.passages = _contents_pages_last(results.passages, texts)
 
         if self._embedder is None or results.too_common or not results.query:
             return results
@@ -108,28 +117,36 @@ class HybridSearchService:
         meaning_chunks = self._passages_for_chunks([m.chunk_id for m in matches], results.query)
 
         # Nearest neighbours exist for any text, so a passage found only by
-        # meaning is shown only from a document whose own words support the
-        # search, or when the passage itself contains enough of them.
+        # meaning must contain enough of the search's words itself, or share
+        # at least one of them and come from a document whose words support
+        # the search. (Tester feedback: in one large set of lecture notes,
+        # every passage of the matching document used to qualify.)
         supported = {passage.document_id for passage in results.passages}
         meaning_passages = [
             passage
             for passage, chunk_text in meaning_chunks
-            if passage.document_id in supported or is_evidence(chunk_text, terms)
+            if is_evidence(chunk_text, terms)
+            or (passage.document_id in supported and term_coverage(chunk_text, terms) >= 1)
         ]
 
         results.passages = _fuse(results.passages, meaning_passages, limit)
         results.used_meaning = True
         return results
 
-    def _keep_evidence_pages(self, results: SearchResults, terms: set[str]) -> None:
-        pages = {(p.document_id, p.page_number) for p in results.passages}
+    def _page_texts(self, passages: list[PassageMatch]) -> dict[tuple[str, int], str]:
+        if not passages:
+            return {}
+        pages = {(p.document_id, p.page_number) for p in passages}
         rows = self._session.execute(
             select(DocumentPageORM.document_id, DocumentPageORM.page_number, DocumentPageORM.text).where(
                 tuple_(DocumentPageORM.document_id, DocumentPageORM.page_number).in_(pages)
             )
         ).all()
-        texts = {(document_id, page_number): page_text for document_id, page_number, page_text in rows}
+        return {(document_id, page_number): page_text for document_id, page_number, page_text in rows}
 
+    def _keep_evidence_pages(
+        self, results: SearchResults, terms: set[str], texts: dict[tuple[str, int], str]
+    ) -> None:
         kept = [
             passage
             for passage in results.passages
@@ -269,6 +286,26 @@ def _fuse(by_words: list[PassageMatch], by_meaning: list[PassageMatch], limit: i
             break
 
     return fused[:limit]
+
+
+def looks_like_contents(text: str) -> bool:
+    """True for table-of-contents style pages (many dot leaders before page numbers)."""
+    return len(_DOT_LEADER.findall(text)) >= CONTENTS_LEADERS
+
+
+def _contents_pages_last(
+    passages: list[PassageMatch], texts: dict[tuple[str, int], str]
+) -> list[PassageMatch]:
+    """Within each document, move contents pages after the other matching pages."""
+    documents = list(dict.fromkeys(p.document_id for p in passages))
+    order = {document_id: i for i, document_id in enumerate(documents)}
+    return sorted(
+        passages,
+        key=lambda p: (
+            order[p.document_id],
+            looks_like_contents(texts.get((p.document_id, p.page_number), "")),
+        ),
+    )
 
 
 def _word_share(text: str) -> float:
