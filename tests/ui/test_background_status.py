@@ -82,7 +82,8 @@ def status(**changes: object) -> BackgroundStatus:
         ),
         ({"meaning_done": 1, "meaning_total": 4, "meaning_unavailable": True}, "All caught up"),
         ({"pause_reason": PauseReason.USER, "documents_to_read": 3}, "Background work paused"),
-        ({"pause_reason": PauseReason.LOW_MEMORY}, "Paused — low memory"),
+        ({"pause_reason": PauseReason.LOW_MEMORY, "documents_to_read": 3}, "Paused — low memory"),
+        ({"pause_reason": PauseReason.LOW_MEMORY}, "All caught up"),
     ],
 )
 def test_pill_text(changes: dict[str, object], expected: str) -> None:
@@ -282,3 +283,24 @@ def test_panel_never_cuts_off_wrapped_text(qapp: QApplication) -> None:
         if text.isVisible() and text.wordWrap():
             assert text.height() >= text.heightForWidth(text.width()), text.text()
     panel.hide()
+
+
+def test_low_memory_with_nothing_to_do_is_not_an_alarm(qapp: QApplication) -> None:
+    from PySide6.QtWidgets import QWidget
+
+    from app.core.computer_profile import ComputerProfile
+    from app.ui.widgets.status_pill import StatusPanel
+
+    idle = status(pause_reason=PauseReason.LOW_MEMORY, health=Health.LOW_MEMORY)
+    text, color = describe(idle)
+    assert text == "All caught up"
+    assert color != describe(status(pause_reason=PauseReason.LOW_MEMORY, documents_to_read=2))[1]
+
+    host = QWidget()
+    panel = StatusPanel(host, ComputerProfile.LIGHT)
+    panel.show_status(idle)
+    assert "Nothing is waiting" in panel._note.text()
+    assert not panel._pause_button.isVisibleTo(panel)
+
+    # With work waiting, it is a real pause.
+    assert describe(status(pause_reason=PauseReason.LOW_MEMORY, documents_to_read=2))[0] == "Paused — low memory"

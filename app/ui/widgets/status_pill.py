@@ -50,6 +50,9 @@ def describe(status: BackgroundStatus) -> tuple[str, str]:
         return "Background work paused", PAUSED_COLOR
 
     if status.pause_reason is PauseReason.LOW_MEMORY:
+        # Nothing is waiting, so nothing is really paused: no red alarm.
+        if status.is_idle:
+            return "All caught up", HEALTH_COLORS[Health.BUSY]
         return "Paused — low memory", HEALTH_COLORS[Health.LOW_MEMORY]
 
     color = HEALTH_COLORS[status.health]
@@ -245,7 +248,7 @@ class StatusPanel(QFrame):
 
         has_work = bool(jobs) or meaning_running
         self._idle.setVisible(not has_work and not status.meaning_unavailable)
-        self._pause_button.setVisible(has_work or self._paused)
+        self._pause_button.setVisible(has_work or status.pause_reason is PauseReason.USER)
 
         notes = {
             PauseReason.USER: "Paused by you. Nothing is lost; work continues when you resume.",
@@ -253,6 +256,11 @@ class StatusPanel(QFrame):
             "It resumes on its own when memory frees up.",
         }
         note = notes.get(status.pause_reason)
+        if status.pause_reason is PauseReason.LOW_MEMORY and status.is_idle:
+            note = (
+                "Your computer is low on memory. Nothing is waiting right now; "
+                "new background work will start once memory frees up."
+            )
         if note is None and status.health is Health.BUSY:
             note = "Your computer is busy, so background work may go more slowly."
         self._note.setVisible(note is not None)
